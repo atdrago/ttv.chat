@@ -1,69 +1,130 @@
 import { useQuery } from "@tanstack/react-query";
 import type { GetServerSideProps, NextPage } from "next";
+import { useRouter } from "next/router";
+import { useEffect, useRef } from "react";
 
-import { Chat } from "../components/Chat";
-import { notNullOrUndefined } from "../lib/notNullOrUndefined";
-import { TwitchUser } from "../types";
+import { Chat } from "components/Chat";
+import { Header } from "components/Header";
+import { Sidebar } from "components/Sidebar";
+import { useChatClient } from "hooks/useChatClient";
+import { useEmotes } from "hooks/useEmotes";
+import { usePersistentState } from "hooks/usePersistentState";
+import { getTwitchUsers } from "lib/getTwitchUsers";
+import { notNullOrUndefined } from "lib/notNullOrUndefined";
+import { getTwitchAppAccessToken } from "lib/server/getTwitchAppAccessToken";
+import { getTwitchUserAccessToken } from "lib/server/getTwitchUserAccessToken";
 
-interface TwitchAuthResponse {
-  access_token: string;
-  expires_in: number;
-  token_type: "bearer";
+interface TwitchAuthQueryParams
+  extends Record<string, string | string[] | undefined> {
+  code?: string;
+  scope?: string;
 }
 
-export const getServerSideProps: GetServerSideProps<{
-  response?: TwitchAuthResponse;
-}> = async () => {
-  try {
-    const response = await fetch("https://id.twitch.tv/oauth2/token", {
-      method: "POST",
-      body: JSON.stringify({
-        client_id: "dwopi6hit5ke343jdo58nbkg1zbu8h",
-        client_secret: "qau0sjufalriwsem5925lsa2u5j3xx",
-        grant_type: "client_credentials",
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    const { access_token, expires_in, token_type }: TwitchAuthResponse =
-      await await response.json();
+interface HomeProps {
+  appAccessTokenErrorMessage?: string;
+  appAccessToken?: string;
+  userAccessToken?: string | null;
+  userAccessTokenErrorMessage?: string | null;
+  userRefreshToken?: string | null;
+}
 
-    return {
-      props: {
-        response: { access_token, expires_in, token_type },
-      },
-    };
+export const getServerSideProps: GetServerSideProps<
+  HomeProps,
+  TwitchAuthQueryParams
+> = async ({ query }) => {
+  let appAccessToken = null;
+
+  try {
+    const { accessToken } = await getTwitchAppAccessToken();
+
+    appAccessToken = accessToken;
   } catch (err) {
     return {
-      notFound: true,
+      props: {
+        appAccessTokenErrorMessage:
+          err instanceof Error
+            ? err.message
+            : "An unknown error occurred attempting to get the app access token.",
+      },
     };
   }
-};
 
-const Home: NextPage = ({ response }: { response?: TwitchAuthResponse }) => {
-  const { access_token, expires_in, token_type } = response ?? {};
-  const channelLogins = ["pokelawls", "nmplol", "esfandtv"];
+  if (!appAccessToken) {
+    return {
+      props: {
+        appAccessTokenErrorMessage:
+          "An unknown error occurred attempting to get the app access token.",
+      },
+    };
+  }
 
-  const { data: channelUsers } = useQuery<{ data: TwitchUser[] }>(
-    ["channel", ...channelLogins, access_token],
-    async () => {
-      const usersUrl = new URL("https://api.twitch.tv/helix/users");
+  let userAccessToken = null;
+  let userRefreshToken = null;
+  let userAccessTokenErrorMessage = null;
 
-      channelLogins.forEach((login) =>
-        usersUrl.searchParams.append("login", login)
+  try {
+    const twitchAuthCode =
+      query.code && typeof query.code === "string" ? query.code : null;
+
+    if (twitchAuthCode) {
+      const { accessToken, refreshToken } = await getTwitchUserAccessToken(
+        twitchAuthCode
       );
 
-      const channelResponse = await fetch(usersUrl.toString(), {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-          "Client-Id": "dwopi6hit5ke343jdo58nbkg1zbu8h",
-        },
-      });
-      console.log("request channel user");
+      userAccessToken = accessToken;
+      userRefreshToken = refreshToken;
+    }
+  } catch (err) {
+    userAccessTokenErrorMessage =
+      err instanceof Error
+        ? err.message
+        : "An unknown error occurred attempting to get the user access token.";
+  }
 
-      return await channelResponse.json();
+  return {
+    props: {
+      appAccessToken,
+      userAccessToken,
+      userAccessTokenErrorMessage,
+      userRefreshToken,
+    },
+  };
+};
+
+const Home: NextPage = ({
+  appAccessToken: aat,
+  appAccessTokenErrorMessage,
+  userAccessToken: uat,
+  userRefreshToken: urt,
+}: HomeProps) => {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (router.query["code"]) {
+      router.replace("/", undefined, { shallow: true });
+    }
+  }, [router]);
+
+  const [appAccessToken] = usePersistentState("app-access-token", aat, {
+    updateWhenInitialStateChanges: () => !!aat,
+  });
+  const [userAccessToken] = usePersistentState("user-access-token", uat, {
+    updateWhenInitialStateChanges: () => !!uat,
+  });
+  const [userRefreshToken] = usePersistentState("user-refresh-token", urt, {
+    updateWhenInitialStateChanges: () => !!urt,
+  });
+
+  const { current } = useRef(["lirik"]);
+  const [joinedChannelUserNames, setJoinedChannelUserNames] =
+    usePersistentState("joined-channels", current);
+
+  const { data: currentUser } = useQuery(
+    ["user"],
+    async () => {
+      const res = await getTwitchUsers();
+
+      return res.data[0];
     },
     {
       retry: false,
@@ -73,29 +134,81 @@ const Home: NextPage = ({ response }: { response?: TwitchAuthResponse }) => {
     }
   );
 
-  if (!access_token) {
-    return <>no token</>;
-  }
+  const { data: joinedChannelUsers } = useQuery(
+    ["user", ...joinedChannelUserNames],
+    async () => {
+      const res = await getTwitchUsers({
+        userNames: joinedChannelUserNames,
+      });
 
-  const channels = !channelUsers
-    ? channelLogins.map((login) => ({ login }))
-    : channelLogins
+      return res.data;
+    },
+    {
+      retry: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+    }
+  );
+
+  const chatClient = useChatClient({
+    channels: joinedChannelUserNames,
+  });
+
+  const channels = !joinedChannelUsers
+    ? joinedChannelUserNames.map((login) => ({ login }))
+    : joinedChannelUserNames
         .map((login) => {
-          return channelUsers.data.find(
+          return joinedChannelUsers?.find(
             ({ login: channelUserLogin }) => login === channelUserLogin
           );
         })
         .filter(notNullOrUndefined);
 
+  const [currentChannel, setCurrentChannel] = usePersistentState(
+    "current-channel",
+    channels[0]?.login
+  );
+  const { bttvChannelEmotes, sevenTvChannelEmotes } = useEmotes(channels);
+
+  if (!appAccessToken) {
+    return appAccessTokenErrorMessage ? (
+      <>{appAccessTokenErrorMessage}</>
+    ) : (
+      <>no token</>
+    );
+  }
+
   return (
     <div
       className="
-        h-full w-full
+        h-full w-full grid
         text-slate-800 bg-slate-300
-        dark:bg-slate-800 dark:text-slate-300
+        dark:bg-neutral-900 dark:text-slate-300
       "
+      style={{
+        gridTemplateColumns: "min-content minmax(0, 1fr)",
+      }}
     >
-      <Chat accessToken={access_token} channels={channels} />
+      <Sidebar
+        appAccessToken={appAccessToken}
+        userId={currentUser?.id}
+        userAccessToken={userAccessToken}
+        userRefreshToken={userRefreshToken}
+        onChannelClick={(channelUserName) => {
+          setJoinedChannelUserNames((prevJoinedChannelUserNames) =>
+            Array.from(
+              new Set([...prevJoinedChannelUserNames, channelUserName])
+            )
+          );
+        }}
+      />
+      <Chat
+        chatClient={chatClient}
+        bttvChannelEmotes={bttvChannelEmotes}
+        channels={channels}
+        sevenTvChannelEmotes={sevenTvChannelEmotes}
+      />
     </div>
   );
 };

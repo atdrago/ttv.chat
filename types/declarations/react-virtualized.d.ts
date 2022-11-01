@@ -4,6 +4,7 @@ declare module "react-virtualized" {
 
   export const AutoSizer: React.FC<{
     children: (props: { width: number; height: number }) => React.ReactNode;
+    disableWidth?: boolean;
   }>;
 
   export const List: React.FC<{

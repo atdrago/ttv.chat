@@ -1,3 +1,93 @@
 {
-  "extends": "next/core-web-vitals"
+  "extends": ["eslint:recommended", "next/core-web-vitals", "prettier"],
+  "overrides": [
+    {
+      "extends": ["plugin:@typescript-eslint/recommended"],
+      "files": ["**/*.ts", "**/*.tsx"],
+      "parserOptions": {
+        "project": ["./tsconfig.json"]
+      },
+      "rules": {
+        "@typescript-eslint/no-empty-interface": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-extraneous-class": "error",
+        "@typescript-eslint/no-shadow": "error",
+        "@typescript-eslint/no-unnecessary-type-assertion": "error",
+        "@typescript-eslint/no-unused-vars": [
+          "warn",
+          {
+            "argsIgnorePattern": "^_",
+            "varsIgnorePattern": "^_"
+          }
+        ],
+        "no-duplicate-imports": "off",
+        "no-shadow": "off"
+      }
+    }
+  ],
+  "rules": {
+    "default-case": "warn",
+    "eqeqeq": ["error", "always"],
+    "linebreak-style": ["error", "unix"],
+    "no-console": "warn",
+    "no-debugger": "warn",
+    "no-duplicate-imports": "warn",
+    "no-lonely-if": "error",
+    "no-shadow": "error",
+    "no-unneeded-ternary": "error",
+    "no-useless-computed-key": "error",
+    "no-useless-rename": "error",
+    "object-shorthand": "error",
+    "padded-blocks": ["warn", "never"],
+    "padding-line-between-statements": [
+      "warn",
+      {
+        "blankLine": "always",
+        "next": "return",
+        "prev": "*"
+      },
+      {
+        "blankLine": "always",
+        "next": "block-like",
+        "prev": "*"
+      },
+      {
+        "blankLine": "always",
+        "next": "*",
+        "prev": "block-like"
+      },
+      {
+        "blankLine": "always",
+        "next": "break",
+        "prev": "*"
+      },
+      {
+        "blankLine": "always",
+        "next": "continue",
+        "prev": "*"
+      },
+      {
+        "blankLine": "never",
+        "next": ["case", "default"],
+        "prev": "case"
+      }
+    ],
+    "prefer-arrow-callback": [
+      "warn",
+      {
+        "allowNamedFunctions": true
+      }
+    ],
+    "prefer-const": "warn",
+    "prefer-object-spread": "warn",
+    "prefer-rest-params": "warn",
+    // https://github.com/jsx-eslint/eslint-plugin-react/blob/master/docs/rules/jsx-no-target-blank.md#when-to-override-it
+    "react/jsx-no-target-blank": [
+      "error",
+      {
+        "allowReferrer": true
+      }
+    ],
+    "yoda": "error"
+  }
 }

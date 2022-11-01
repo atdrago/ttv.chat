@@ -1,5 +1,5 @@
-import "react-virtualized/styles.css";
 import "../styles/globals.css";
+import "react-virtualized/styles.css";
 
 import {
   Hydrate,
@@ -14,6 +14,7 @@ function MyApp({
   pageProps,
 }: AppProps<{ dehydratedState?: unknown }>) {
   const [queryClient] = useState(() => new QueryClient());
+
   return (
     <QueryClientProvider client={queryClient}>
       <Hydrate state={pageProps.dehydratedState}>

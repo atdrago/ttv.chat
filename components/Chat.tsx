@@ -1,33 +1,38 @@
-import { useEffect, useState, useMemo, useRef, startTransition } from "react";
-import { useChatClient } from "../hooks/useChatClient";
-import { useEmotes } from "../hooks/useEmotes";
-import { Message, TwitchUser } from "../types";
-import classNames from "classnames";
-import { usePersistentState } from "../hooks/usePersistentState";
-import { Plus } from "phosphor-react";
-import { ChatMessages } from "../components/ChatMessages";
+import { ChatClient } from "@twurple/chat";
+import { startTransition, useEffect, useState } from "react";
+
+import { ChatMessages } from "components/ChatMessages";
+import { Header } from "components/Header";
+import { usePersistentState } from "hooks/usePersistentState";
+import { BttvEmote, Message, SevenTvEmote, TwitchUser } from "types";
 
 interface ChatProps {
-  accessToken: string;
+  bttvChannelEmotes: Record<string, Record<string, BttvEmote>>;
   channels: TwitchUser[];
+  sevenTvChannelEmotes: Record<string, Record<string, SevenTvEmote>>;
+  chatClient: ChatClient | undefined;
 }
 
-export const Chat = ({ channels }: ChatProps) => {
-  const { emoteRegexp, bttvMap, sevenTvMap } = useEmotes(channels);
+export const Chat = ({
+  chatClient,
+  channels,
+  bttvChannelEmotes,
+  sevenTvChannelEmotes,
+}: ChatProps) => {
   const [messagesByChannel, setMessagesByChannel] = useState<Message[][]>(
     channels.map(() => [])
   );
-  const channelLogins = useMemo(
-    () => channels.map(({ login }) => login),
-    [channels]
-  );
-  const chatClient = useChatClient({
-    channels: channelLogins,
-  });
+
   const [currentChannel, setCurrentChannel] = usePersistentState(
     "current-channel",
-    channelLogins[0]
+    channels[0]?.login
   );
+
+  useEffect(() => {
+    setMessagesByChannel((prevMessagesByChannel) =>
+      channels.map((_channel, index) => prevMessagesByChannel[index] ?? [])
+    );
+  }, [channels]);
 
   useEffect(() => {
     const messageHandler = chatClient?.onMessage((channel, user, text, msg) => {
@@ -36,74 +41,88 @@ export const Chat = ({ channels }: ChatProps) => {
       });
 
       startTransition(() => {
-        const html = msg.parseEmotes().reduce((acc, part, index) => {
+        const html = msg.parseEmotes().reduce((acc, part) => {
           switch (part.type) {
-            case "text":
-              return part.text.replace(emoteRegexp, (match) => {
-                const bttvEmote = bttvMap?.[match];
+            case "text": {
+              return (
+                acc +
+                part.text
+                  .split(" ")
+                  .map((word) => {
+                    const { login } = channels[channelIndex];
 
-                if (bttvEmote) {
-                  const bttvEmoteId = bttvEmote.id;
-                  const src =
-                    bttvEmote?.images?.["1x"] ??
-                    `https://cdn.betterttv.net/emote/${bttvEmoteId}/1x`;
+                    if (word.startsWith("@")) {
+                      return `<b>${word}</b>`;
+                    }
 
-                  return (
-                    acc +
-                    `
-                      <img
-                        alt="${match}"
-                        title="${match}"
-                        class="inline h-8 will-change-transform rotate-0"
-                        src="${src}"
-                      />
-                    `
-                  );
-                }
+                    const sevenTvMatch =
+                      sevenTvChannelEmotes?.[login]?.[word] ??
+                      sevenTvChannelEmotes?.["global"]?.[word];
 
-                const sevenTvMatch = sevenTvMap?.[match];
+                    if (sevenTvMatch) {
+                      const width = sevenTvMatch.width[0] ?? "";
 
-                if (sevenTvMatch) {
-                  const width = sevenTvMatch.width[0] ?? "";
-                  return (
-                    acc +
-                    `
-                      <img
-                        alt="${match}"
-                        title="${match}"
-                        class="inline"
-                        src="${sevenTvMatch.urls[0][1]}"
-                        width="${width}"
-                        height="32"
-                      />
-                    `
-                  );
-                }
+                      return `
+                          <img
+                            alt="${word}"
+                            title="${word}"
+                            class="inline"
+                            src="${sevenTvMatch.urls[0][1]}"
+                            width="${width}"
+                          />
+                        `;
+                    }
 
-                return "";
-              });
+                    const bttvEmote =
+                      bttvChannelEmotes?.[login]?.[word] ??
+                      bttvChannelEmotes?.["global"]?.[word];
 
-            case "emote":
+                    if (bttvEmote) {
+                      const bttvEmoteId = bttvEmote.id;
+                      const src =
+                        bttvEmote?.images?.["1x"] ??
+                        `https://cdn.betterttv.net/emote/${bttvEmoteId}/1x`;
+
+                      return `
+                          <img
+                            alt="${word}"
+                            title="${word}"
+                            class="inline w-8"
+                            src="${src}"
+                            width="32"
+                          />
+                        `;
+                    }
+
+                    return word;
+                  })
+                  .join(" ")
+              );
+            }
+            case "emote": {
               return (
                 acc +
                 `
-                  <img
-                    class="inline h-8 will-change-transform rotate-0"
-                    alt="${part.displayInfo.code}"
-                    title="${part.displayInfo.code}"
-                    src="${part.displayInfo.getUrl({
-                      animationSettings: "default",
-                      size: "1.0",
-                      backgroundType: "dark",
-                    })}"
-                  />
+                    <img
+                      width="32"
+                      class="inline w-8"
+                      alt="${part.displayInfo.code}"
+                      title="${part.displayInfo.code}"
+                      src="${part.displayInfo.getUrl({
+                        animationSettings: "default",
+                        size: "1.0",
+                        backgroundType: "dark",
+                      })}"
+                    />
                 `
               );
+            }
             default:
-              return acc;
+              return acc + "???";
           }
         }, "");
-        const { id } = msg;
+
+        const { id, target } = msg;
         const { color, displayName } = msg.userInfo;
 
         setMessagesByChannel((prevMessages) => {
@@ -112,7 +131,13 @@ export const Chat = ({ channels }: ChatProps) => {
               if (channelIndex === prevChannelIndex) {
                 return [
                   ...prevChannelMessages,
-                  { id, color, displayName, html },
+                  {
+                    id,
+                    color,
+                    displayName,
+                    html,
+                    channelUserName: target.value.slice(1),
+                  },
                 ];
               }
 
@@ -131,67 +156,34 @@ export const Chat = ({ channels }: ChatProps) => {
       }
     };
   }, [
-    bttvMap,
+    bttvChannelEmotes,
     channels,
     chatClient,
-    emoteRegexp,
     setMessagesByChannel,
-    sevenTvMap,
+    sevenTvChannelEmotes,
   ]);
 
   return (
-    <div className="h-full w-full flex flex-col">
-      <div
-        className="
-          p-3
-          dark:bg-neutral-900 dark:text-slate-300
-          border-b border-slate-900
-          flex gap-3 items-center
-          overflow-x-auto overflow-y-hidden
-        "
-      >
-        <button
-          className="
-            font-mono text-xl rounded-full h-8 w-8
-          bg-slate-800
-            flex-shrink-0 flex items-center justify-center
-          "
-        >
-          <Plus size={14} weight="bold" />
-        </button>
-        {channels.map(({ login, profile_image_url }) => (
-          <button
-            className={classNames(
-              "px-4 py-2 rounded flex flex-shrink-0 gap-3 transition-colors",
-              {
-                "bg-slate-800": login !== currentChannel,
-                "bg-slate-700 shadow-sm shadow-slate-600":
-                  login === currentChannel,
-              }
-            )}
-            key={login}
-            onClick={() => setCurrentChannel(login)}
-          >
-            <img
-              className="h-6 w-6 text-lg leading-6 rounded-full"
-              src={profile_image_url}
-              alt=""
-              height="24"
-              width="24"
-            />
-            <span className="text-lg leading-6">{login}</span>
-          </button>
-        ))}
-      </div>
-      <div className="flex gap-8 flex-grow">
-        {messagesByChannel.map((messages, index) => (
+    <div
+      className="h-full w-full max-w-full max-h-full grid overflow-hidden bg-slate-800"
+      style={{ gridTemplateRows: "min-content minmax(0, 1fr)" }}
+    >
+      <Header
+        joinedChannelUsers={channels}
+        currentChannel={currentChannel}
+        onCurrentChannelChange={setCurrentChannel}
+      />
+      {messagesByChannel.map((messages, index) => {
+        const { login } = channels[index];
+
+        return (
           <ChatMessages
-            isVisible={currentChannel === channelLogins[index]}
+            isVisible={currentChannel === login}
             messages={messages}
-            key={channelLogins[index]}
+            key={login}
           />
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 };

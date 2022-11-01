@@ -1,7 +1,9 @@
 import { ChatClient } from "@twurple/chat";
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 
 interface UseChatClientProps {
+  accessToken?: string;
+  refreshToken?: string;
   channels: string[];
 }
 

@@ -1,8 +1,9 @@
-import { useEffect, useState, useMemo, useRef } from "react";
-import { Message } from "../types";
-import { List, AutoSizer, CellMeasurerCache } from "react-virtualized";
 import { ArrowDown } from "phosphor-react";
-import { ChatRow } from "../components/ChatRow";
+import { useEffect, useRef, useState } from "react";
+import { AutoSizer, CellMeasurerCache, List } from "react-virtualized";
+
+import { ChatRow } from "components/ChatRow";
+import { Message } from "types";
 
 interface ChatMessagesProps {
   isVisible: boolean;
@@ -30,7 +31,7 @@ export const ChatMessages = ({ isVisible, messages }: ChatMessagesProps) => {
   }
 
   return (
-    <div className="relative flex-grow">
+    <div>
       <AutoSizer>
         {({ width, height }) => {
           return (
@@ -47,7 +48,7 @@ export const ChatMessages = ({ isVisible, messages }: ChatMessagesProps) => {
               }}
               width={width}
               height={height}
-              overscanRowCount={10}
+              overscanRowCount={100}
               rowCount={messages.length}
               deferredMeasurementCache={cacheRef.current}
               rowHeight={cacheRef.current.rowHeight}
@@ -65,7 +66,6 @@ export const ChatMessages = ({ isVisible, messages }: ChatMessagesProps) => {
                   />
                 );
               }}
-              // scrollToAlignment="end"
               scrollToIndex={isPinnedToBottom ? messages.length - 1 : undefined}
             />
           );

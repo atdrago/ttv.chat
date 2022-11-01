@@ -1,6 +1,8 @@
-import type { Message } from "../types";
+import classNames from "classnames";
+import { memo } from "react";
 import { CellMeasurer, CellMeasurerCache } from "react-virtualized";
-import { useRef, useEffect } from "react";
+
+import type { Message } from "types";
 
 interface ChatRowProps {
   message: Message;
@@ -10,16 +12,16 @@ interface ChatRowProps {
   cache: CellMeasurerCache;
 }
 
-export const ChatRow = ({
+export const ChatRow = memo(function ChatRowComponent({
   cache,
   message,
   index,
   parent,
   style,
-}: ChatRowProps) => {
-  const { html, color, displayName } = message;
+}: ChatRowProps) {
+  const { html, color, channelUserName, displayName } = message;
 
-  useEffect(() => {}, []);
+  const isAtStreamer = new RegExp(`@${channelUserName}`, "i").test(html);
 
   return (
     <CellMeasurer
@@ -30,8 +32,14 @@ export const ChatRow = ({
     >
       {({ measure, registerChild }) => {
         return (
-          <p ref={registerChild} style={style} className="pb-2 px-2">
-            <b style={{ color: color }}>{displayName}</b>:{" "}
+          <p
+            ref={registerChild}
+            style={style}
+            className={classNames("p-2 align-sub", {
+              "bg-slate-700": isAtStreamer,
+            })}
+          >
+            <b style={{ color }}>{displayName}</b>:{" "}
             <span
               dangerouslySetInnerHTML={{ __html: html }}
               onLoadCapture={(event) => {
@@ -45,4 +53,4 @@ export const ChatRow = ({
       }}
     </CellMeasurer>
   );
-};
+});
