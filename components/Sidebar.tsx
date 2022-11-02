@@ -16,6 +16,7 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({
+  currentChannel,
   userId,
   appAccessToken,
   onChannelClick,
@@ -64,12 +65,12 @@ export const Sidebar = ({
   return (
     <nav
       className={classNames("bg-neutral-900", {
-        "z-1 p-3 pt-5 sm:p-5 h-full overflow-auto flex-shrink-0 border-r border-neutral-700 shadow-md shadow-neutral-900":
+        "z-1 p-2 pt-5 sm:p-5 h-full overflow-auto flex-shrink-0 border-r border-neutral-700 shadow-md shadow-neutral-900":
           followedChannelUsers && followedChannelUsers.length > 0,
       })}
     >
       {followedChannelUsers && followedChannelUsers.length > 0 ? (
-        <ul className="flex flex-col gap-2 w-8">
+        <ul className="flex flex-col gap-1 w-9">
           {followedChannelUsers?.map(({ login, profile_image_url }) => (
             <li key={login}>
               <button
@@ -83,10 +84,16 @@ export const Sidebar = ({
                 {profile_image_url ? (
                   <Image
                     alt=""
-                    className="block h-8 w-8 text-lg leading-6 rounded-full"
-                    height={32}
+                    className={classNames(
+                      "block h-9 w-9 text-lg leading-6 rounded-full p-0.5 border-2 border-solid",
+                      {
+                        "border-transparent": currentChannel !== login,
+                        "border-emerald-500": currentChannel === login,
+                      }
+                    )}
+                    height={36}
                     src={profile_image_url}
-                    width={32}
+                    width={36}
                   />
                 ) : null}
               </button>
