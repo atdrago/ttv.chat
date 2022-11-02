@@ -6,12 +6,15 @@ import { ChatRow } from "components/ChatRow";
 import { Message } from "types";
 
 interface ChatMessagesProps {
-  isVisible: boolean;
   messages: Message[];
+  channel: string;
 }
 
-export const ChatMessages = ({ isVisible, messages }: ChatMessagesProps) => {
-  const cacheRef = useRef<CellMeasurerCache>(
+export const ChatMessages = ({ messages, channel }: ChatMessagesProps) => {
+  const listRef = useRef();
+  const scrollTopRef = useRef(0);
+  const scrollHeightRef = useRef(0);
+  const [cache] = useState<CellMeasurerCache>(
     new CellMeasurerCache({
       fixedWidth: true,
       defaultHeight: 32,
@@ -19,16 +22,10 @@ export const ChatMessages = ({ isVisible, messages }: ChatMessagesProps) => {
   );
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
 
-  // Pin to bottom when this component becomes visible
   useEffect(() => {
-    if (isVisible) {
-      setIsPinnedToBottom(true);
-    }
-  }, [isVisible]);
-
-  if (!isVisible) {
-    return null;
-  }
+    cache.clearAll();
+    setIsPinnedToBottom(true);
+  }, [cache, channel]);
 
   return (
     <div>
@@ -36,33 +33,47 @@ export const ChatMessages = ({ isVisible, messages }: ChatMessagesProps) => {
         {({ width, height }) => {
           return (
             <List
+              ref={listRef}
               onScroll={({ clientHeight, scrollHeight, scrollTop }) => {
-                const didScrollToBottom =
-                  scrollTop + clientHeight === scrollHeight;
+                if (isPinnedToBottom) {
+                  const isScrollingUpward = scrollTop < scrollTopRef.current;
+                  const didHeightChange =
+                    scrollHeight !== scrollHeightRef.current;
 
-                if (didScrollToBottom && !isPinnedToBottom) {
-                  setIsPinnedToBottom(true);
-                } else if (!didScrollToBottom && isPinnedToBottom) {
-                  setIsPinnedToBottom(false);
+                  if (isScrollingUpward && !didHeightChange) {
+                    setIsPinnedToBottom(false);
+                  }
+                } else {
+                  const didScrollToBottom =
+                    scrollTop + clientHeight === scrollHeight ||
+                    scrollHeight === 0;
+
+                  if (didScrollToBottom) {
+                    setIsPinnedToBottom(true);
+                  }
                 }
+
+                scrollTopRef.current = scrollTop;
+                scrollHeightRef.current = scrollHeight;
               }}
               width={width}
               height={height}
               overscanRowCount={100}
               rowCount={messages.length}
-              deferredMeasurementCache={cacheRef.current}
-              rowHeight={cacheRef.current.rowHeight}
-              rowRenderer={({ index, style, parent }) => {
+              deferredMeasurementCache={cache}
+              rowHeight={cache.rowHeight}
+              rowRenderer={({ index, style, parent, isScrolling }) => {
                 const message = messages[index];
 
                 return (
                   <ChatRow
-                    cache={cacheRef.current}
+                    cache={cache}
                     index={index}
                     key={message.id}
                     message={message}
                     parent={parent}
                     style={style}
+                    isScrolling={isScrolling}
                   />
                 );
               }}

@@ -10,6 +10,7 @@ interface ChatRowProps {
   parent: React.ReactNode;
   style: React.CSSProperties;
   cache: CellMeasurerCache;
+  isScrolling: boolean;
 }
 
 export const ChatRow = memo(function ChatRowComponent({
@@ -18,6 +19,7 @@ export const ChatRow = memo(function ChatRowComponent({
   index,
   parent,
   style,
+  isScrolling,
 }: ChatRowProps) {
   const { html, color, channelUserName, displayName } = message;
 
@@ -35,7 +37,7 @@ export const ChatRow = memo(function ChatRowComponent({
           <p
             ref={registerChild}
             style={style}
-            className={classNames("p-2 align-sub", {
+            className={classNames("p-2 align-sub break-all", {
               "bg-slate-700": isAtStreamer,
             })}
           >
@@ -43,7 +45,8 @@ export const ChatRow = memo(function ChatRowComponent({
             <span
               dangerouslySetInnerHTML={{ __html: html }}
               onLoadCapture={(event) => {
-                if (event.currentTarget.nodeName === "IMG") {
+                if (!isScrolling && event.target instanceof HTMLImageElement) {
+                  cache.clear(index, 0);
                   measure();
                 }
               }}

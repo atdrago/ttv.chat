@@ -1,4 +1,4 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { BttvEmote, SevenTvEmote, TwitchUser } from "types";
@@ -21,7 +21,7 @@ export const useEmotes = (channels: TwitchUser[] = []) => {
               login,
               response: [
                 ...(data.channelEmotes ?? []),
-                ...[data.sharedEmotes ?? []],
+                ...(data.sharedEmotes ?? []),
               ],
             };
           },

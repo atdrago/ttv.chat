@@ -4,7 +4,6 @@ import { useRouter } from "next/router";
 import { useEffect, useRef } from "react";
 
 import { Chat } from "components/Chat";
-import { Header } from "components/Header";
 import { Sidebar } from "components/Sidebar";
 import { useChatClient } from "hooks/useChatClient";
 import { useEmotes } from "hooks/useEmotes";
@@ -115,13 +114,17 @@ const Home: NextPage = ({
     updateWhenInitialStateChanges: () => !!urt,
   });
 
-  const { current } = useRef(["lirik"]);
+  const { current: currentChannels } = useRef(["lirik"]);
   const [joinedChannelUserNames, setJoinedChannelUserNames] =
-    usePersistentState("joined-channels", current);
+    usePersistentState("joined-channels", currentChannels);
 
   const { data: currentUser } = useQuery(
-    ["user"],
+    ["user", userAccessToken],
     async () => {
+      if (!userAccessToken) {
+        return null;
+      }
+
       const res = await getTwitchUsers();
 
       return res.data[0];
@@ -135,8 +138,12 @@ const Home: NextPage = ({
   );
 
   const { data: joinedChannelUsers } = useQuery(
-    ["user", ...joinedChannelUserNames],
+    ["user", ...joinedChannelUserNames, appAccessToken],
     async () => {
+      if (!appAccessToken) {
+        return null;
+      }
+
       const res = await getTwitchUsers({
         userNames: joinedChannelUserNames,
       });
@@ -169,6 +176,7 @@ const Home: NextPage = ({
     "current-channel",
     channels[0]?.login
   );
+
   const { bttvChannelEmotes, sevenTvChannelEmotes } = useEmotes(channels);
 
   if (!appAccessToken) {
@@ -191,23 +199,23 @@ const Home: NextPage = ({
       }}
     >
       <Sidebar
+        currentChannel={currentChannel}
         appAccessToken={appAccessToken}
         userId={currentUser?.id}
         userAccessToken={userAccessToken}
         userRefreshToken={userRefreshToken}
         onChannelClick={(channelUserName) => {
-          setJoinedChannelUserNames((prevJoinedChannelUserNames) =>
-            Array.from(
-              new Set([...prevJoinedChannelUserNames, channelUserName])
-            )
-          );
+          setJoinedChannelUserNames([channelUserName]);
+          setCurrentChannel(channelUserName);
         }}
       />
       <Chat
+        currentChannel={currentChannel}
         chatClient={chatClient}
         bttvChannelEmotes={bttvChannelEmotes}
         channels={channels}
         sevenTvChannelEmotes={sevenTvChannelEmotes}
+        setCurrentChannel={setCurrentChannel}
       />
     </div>
   );

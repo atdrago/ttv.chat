@@ -1,6 +1,6 @@
 import getObjectPath from "lodash.get";
 import setObjectPath from "lodash.set";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   tryLocalStorageGetItem,
@@ -21,6 +21,18 @@ export const usePersistentState = <S>(
   const useStateResult = useState(initialState);
   const [didSetInitialState, setDidSetInitialState] = useState(false);
   const [value, setValue] = useStateResult;
+
+  const setValueInStorage = useCallback(
+    (nextValue: S | (() => S)) => {
+      const storageText = tryLocalStorageGetItem(ROOT_KEY);
+      const storage = storageText ? JSON.parse(storageText) : {};
+
+      setObjectPath(storage, path, nextValue);
+
+      tryLocalStorageSetItem(ROOT_KEY, JSON.stringify(storage));
+    },
+    [path]
+  );
 
   /**
    * Update our React state from localStorage
@@ -47,13 +59,8 @@ export const usePersistentState = <S>(
   useEffect(() => {
     if (!didSetInitialState) return;
 
-    const storageText = tryLocalStorageGetItem(ROOT_KEY);
-    const storage = storageText ? JSON.parse(storageText) : {};
-
-    setObjectPath(storage, path, value);
-
-    tryLocalStorageSetItem(ROOT_KEY, JSON.stringify(storage));
-  }, [didSetInitialState, path, value]);
+    setValueInStorage(value);
+  }, [didSetInitialState, setValueInStorage, value]);
 
   const interpretedUpdateWhenInitialStateChanges =
     typeof updateWhenInitialStateChanges === "boolean"
@@ -66,8 +73,14 @@ export const usePersistentState = <S>(
   useEffect(() => {
     if (interpretedUpdateWhenInitialStateChanges) {
       setValue(initialState);
+      setValueInStorage(initialState);
     }
-  }, [interpretedUpdateWhenInitialStateChanges, initialState, setValue, path]);
+  }, [
+    interpretedUpdateWhenInitialStateChanges,
+    initialState,
+    setValue,
+    setValueInStorage,
+  ]);
 
   return useStateResult;
 };

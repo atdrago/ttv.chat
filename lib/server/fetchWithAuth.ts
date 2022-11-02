@@ -18,15 +18,18 @@ export const fetchWithAuth = async (
   attempts = 3,
   attemptsLeft = 3
 ): Promise<any> => {
-  if (attemptsLeft === 0) {
-    throw new Error(`Failed to fetch after ${attempts} attempts.`);
-  }
-
   let storage = tryLocalStorageGetItem("ttv");
   let storageJson = storage ? JSON.parse(storage) : {};
   const userAccessToken = storageJson["user-access-token"];
   const userRefreshToken = storageJson["user-refresh-token"];
   const appAccessToken = storageJson["app-access-token"];
+
+  if (attemptsLeft === 0) {
+    delete storageJson["user-access-token"];
+    delete storageJson["user-refresh-token"];
+    tryLocalStorageSetItem("ttv", JSON.stringify(storageJson));
+    throw new Error(`Failed to fetch after ${attempts} attempts.`);
+  }
 
   if (authType === "user" && !userAccessToken) {
     throw new Error("Attempted to use user token but user never logged in");

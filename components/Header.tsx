@@ -1,7 +1,7 @@
-import classNames from "classnames";
 import Image from "next/image";
-import { TwitchLogo, X } from "phosphor-react";
+import { TwitchLogo, User, UserList } from "phosphor-react";
 
+import { usePersistentState } from "hooks/usePersistentState";
 import { TwitchUser } from "types";
 
 interface HeaderProps {
@@ -10,11 +10,9 @@ interface HeaderProps {
   joinedChannelUsers: TwitchUser[];
 }
 
-export const Header = ({
-  currentChannel,
-  joinedChannelUsers,
-  onCurrentChannelChange,
-}: HeaderProps) => {
+export const Header = ({ currentChannel, joinedChannelUsers }: HeaderProps) => {
+  const [userAccessToken] = usePersistentState("user-access-token", null);
+
   const twitchLoginHref = new URL(
     `https://id.twitch.tv/oauth2/authorize?${new URLSearchParams({
       client_id: process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID,
@@ -24,63 +22,60 @@ export const Header = ({
     })}`
   );
 
+  const currentChannelUser = joinedChannelUsers.find(
+    ({ login }) => login === currentChannel
+  );
+
   return (
     <div
       className="
         p-3
         dark:bg-neutral-900 dark:text-slate-300
         border-b border-slate-900
-        flex gap-3 items-center
+        flex gap-3 items-center justify-between
         overflow-x-auto overflow-y-hidden
       "
     >
-      {/* <button
-        className="
-          font-mono text-xl rounded-full h-8 w-8
-        bg-slate-800
-          flex-shrink-0 flex items-center justify-center
+      {currentChannelUser ? (
+        <h1 className="flex gap-3 items-center">
+          <UserList size={28} />
+          {typeof currentChannelUser.profile_image_url === "string" ? (
+            <Image
+              alt=""
+              className="
+                h-10 w-10 text-lg leading-6
+                rounded-full border-2 border-solid border-emerald-500
+                p-0.5 flex-shrink-0
+              "
+              height={40}
+              src={currentChannelUser.profile_image_url}
+              width={40}
+              priority={true}
+            />
+          ) : (
+            <User
+              size={40}
+              className="
+                h-10 w-10 text-lg leading-6
+                rounded-full border-2 border-solid border-emerald-500
+                p-0.5 flex-shrink-0
+              "
+            />
+          )}
+          <span className="font-bold text-lg">{currentChannel}</span>
+        </h1>
+      ) : null}
+      {!userAccessToken ? (
+        <a
+          className="
+          text-md rounded bg-violet-600 flex items-center justify-center
+          px-2 py-1 gap-2
         "
-      >
-        <Plus size={14} weight="bold" />
-      </button> */}
-      <a
-        className="
-          text-lg rounded-full bg-violet-600 flex items-center justify-center
-          px-3 py-1 gap-1
-        "
-        href={twitchLoginHref.toString()}
-      >
-        <TwitchLogo size={24} weight="bold" /> Login
-      </a>
-      {joinedChannelUsers.map(({ login, profile_image_url }) => (
-        <span className="flex flex-shrink-0 gap-2" key={login}>
-          <button
-            className={classNames(
-              "px-3 py-2 rounded flex gap-3 transition-colors",
-              {
-                "bg-slate-800": login !== currentChannel,
-                "bg-slate-700 shadow-sm shadow-slate-600":
-                  login === currentChannel,
-              }
-            )}
-            onClick={() => onCurrentChannelChange(login)}
-          >
-            {profile_image_url ? (
-              <Image
-                alt=""
-                className="h-6 w-6 text-lg leading-6 rounded-full"
-                height="24"
-                src={profile_image_url}
-                width="24"
-              />
-            ) : null}
-            <span className="text-lg leading-6">{login}</span>
-          </button>
-          <button>
-            <X />
-          </button>
-        </span>
-      ))}
+          href={twitchLoginHref.toString()}
+        >
+          <TwitchLogo size={18} weight="bold" /> Login
+        </a>
+      ) : null}
     </div>
   );
 };

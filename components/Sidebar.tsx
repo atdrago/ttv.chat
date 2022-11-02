@@ -7,6 +7,7 @@ import { getTwitchUsers } from "lib/getTwitchUsers";
 import { TwitchChannel } from "types";
 
 interface SidebarProps {
+  currentChannel?: string;
   appAccessToken?: string | null | undefined;
   userAccessToken?: string | null | undefined;
   userRefreshToken?: string | null | undefined;
@@ -59,10 +60,6 @@ export const Sidebar = ({
       refetchOnWindowFocus: false,
     }
   );
-
-  // if (!followedChannelUsers || followedChannelUsers.length === 0) {
-  //   return <nav></nav>;
-  // }
 
   return (
     <nav
