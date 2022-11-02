@@ -12,8 +12,6 @@ export default async function handler(
     throw new Error("use post");
   }
 
-  console.log(req.body, req.body.userRefreshToken);
-
   const { userRefreshToken } = req.body;
 
   if (!userRefreshToken) {
