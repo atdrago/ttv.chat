@@ -74,5 +74,5 @@ export const fetchWithAuth = async (
     throw new Error("Could not refresh user token");
   }
 
-  return await fetchWithAuth(input, init, authType, attempts, attempts - 1);
+  return await fetchWithAuth(input, init, authType, attempts, attemptsLeft - 1);
 };
