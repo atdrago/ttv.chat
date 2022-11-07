@@ -15,6 +15,8 @@ interface ChatProps {
   setCurrentChannel: Dispatch<SetStateAction<string>>;
 }
 
+const emojiRegexp = /(\p{EPres}|\p{ExtPict})(\u200d(\p{EPres}|\p{ExtPict}))*/gu;
+
 export const Chat = ({
   chatClient,
   channels,
@@ -43,6 +45,10 @@ export const Chat = ({
 
                   if (word.startsWith("@")) {
                     return `<b>${word}</b>`;
+                  }
+
+                  if (emojiRegexp.test(word)) {
+                    return `<span class="text-3xl">${word}</span>`;
                   }
 
                   const sevenTvMatch =
