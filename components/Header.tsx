@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { TwitchLogo, User, UserList } from "phosphor-react";
 
-import { usePersistentState } from "hooks/usePersistentState";
+import { useCookieContext } from "hooks/useCookieContext";
 import { TwitchUser } from "types";
 
 interface HeaderProps {
@@ -11,7 +11,7 @@ interface HeaderProps {
 }
 
 export const Header = ({ currentChannel, joinedChannelUsers }: HeaderProps) => {
-  const [userAccessToken] = usePersistentState("user-access-token", null);
+  const { cookies, deleteCookie } = useCookieContext();
 
   const twitchLoginHref = new URL(
     `https://id.twitch.tv/oauth2/authorize?${new URLSearchParams({
@@ -65,7 +65,7 @@ export const Header = ({ currentChannel, joinedChannelUsers }: HeaderProps) => {
           <span className="font-bold text-lg">{currentChannel}</span>
         </h1>
       ) : null}
-      {!userAccessToken ? (
+      {!cookies["user-access-token"] ? (
         <a
           className="
           text-md rounded bg-violet-600 flex items-center justify-center
@@ -75,7 +75,20 @@ export const Header = ({ currentChannel, joinedChannelUsers }: HeaderProps) => {
         >
           <TwitchLogo size={18} weight="bold" /> Login
         </a>
-      ) : null}
+      ) : (
+        <button
+          className="
+            text-md rounded bg-violet-600 flex items-center justify-center
+            px-2 py-1 gap-2
+          "
+          onClick={() => {
+            deleteCookie("user-access-token");
+            deleteCookie("user-refresh-token");
+          }}
+        >
+          <TwitchLogo size={18} weight="bold" /> Logout
+        </button>
+      )}
     </div>
   );
 };

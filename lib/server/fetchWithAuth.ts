@@ -1,7 +1,6 @@
-import {
-  tryLocalStorageGetItem,
-  tryLocalStorageSetItem,
-} from "lib/client/localStorage";
+import { getCookie } from "cookies-next";
+
+import { deleteCookie, setCookie } from "hooks/useCookieContext";
 
 /**
  * Fetch, but attempt to refresh the userAccessToken if the response to the
@@ -11,23 +10,20 @@ import {
  * interchangeably with fetch. It is required if this function should attempt to
  * refresh the userAccessToken.
  */
-export const fetchWithAuth = async (
+export const fetchWithAuth = async <TResponse = any>(
   input: Parameters<typeof fetch>[0],
   init: Parameters<typeof fetch>[1],
   authType: "user" | "app" = "user",
   attempts = 3,
   attemptsLeft = 3
-): Promise<any> => {
-  let storage = tryLocalStorageGetItem("ttv");
-  let storageJson = storage ? JSON.parse(storage) : {};
-  const userAccessToken = storageJson["user-access-token"];
-  const userRefreshToken = storageJson["user-refresh-token"];
-  const appAccessToken = storageJson["app-access-token"];
+): Promise<TResponse> => {
+  const userAccessToken = getCookie("user-access-token");
+  const userRefreshToken = getCookie("user-refresh-token");
+  const appAccessToken = getCookie("app-access-token");
 
   if (attemptsLeft === 0) {
-    delete storageJson["user-access-token"];
-    delete storageJson["user-refresh-token"];
-    tryLocalStorageSetItem("ttv", JSON.stringify(storageJson));
+    deleteCookie("user-access-token");
+    deleteCookie("user-refresh-token");
     throw new Error(`Failed to fetch after ${attempts} attempts.`);
   }
 
@@ -65,11 +61,14 @@ export const fetchWithAuth = async (
   const refreshResponseJson = await refreshResponse.json();
 
   if (refreshResponseJson.access_token && refreshResponseJson.refresh_token) {
-    storage = tryLocalStorageGetItem("ttv");
-    storageJson = storage ? JSON.parse(storage) : {};
-    storageJson["user-access-token"] = refreshResponseJson.access_token;
-    storageJson["user-refresh-token"] = refreshResponseJson.refresh_token;
-    tryLocalStorageSetItem("ttv", JSON.stringify(storageJson));
+    setCookie("user-access-token", refreshResponseJson.access_token, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+    setCookie("user-access-token", refreshResponseJson.refresh_token, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
   } else {
     throw new Error("Could not refresh user token");
   }

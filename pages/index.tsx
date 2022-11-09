@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { getCookie, setCookie } from "cookies-next";
 import type { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useRef } from "react";
@@ -6,6 +7,8 @@ import { useEffect, useRef } from "react";
 import { Chat } from "components/Chat";
 import { Sidebar } from "components/Sidebar";
 import { useChatClient } from "hooks/useChatClient";
+import { CookieProvider } from "hooks/useCookieContext";
+import { useCurrentUser } from "hooks/useCurrentUser";
 import { useEmotes } from "hooks/useEmotes";
 import { usePersistentState } from "hooks/usePersistentState";
 import { getTwitchUsers } from "lib/getTwitchUsers";
@@ -20,8 +23,8 @@ interface TwitchAuthQueryParams
 }
 
 interface HomeProps {
+  appAccessToken?: string | null;
   appAccessTokenErrorMessage?: string;
-  appAccessToken?: string;
   userAccessToken?: string | null;
   userAccessTokenErrorMessage?: string | null;
   userRefreshToken?: string | null;
@@ -30,13 +33,29 @@ interface HomeProps {
 export const getServerSideProps: GetServerSideProps<
   HomeProps,
   TwitchAuthQueryParams
-> = async ({ query }) => {
-  let appAccessToken = null;
+> = async ({ query, req, res }) => {
+  let appAccessToken: string | null | undefined;
 
   try {
-    const { accessToken } = await getTwitchAppAccessToken();
+    const { expiresIn, accessToken } = await getTwitchAppAccessToken();
+
+    if (typeof accessToken !== "string") {
+      return {
+        props: {
+          appAccessTokenErrorMessage:
+            "An unknown error occurred attempting to get the app access token.",
+        },
+      };
+    }
 
     appAccessToken = accessToken;
+
+    setCookie("app-access-token", appAccessToken, {
+      req,
+      res,
+      path: "/",
+      maxAge: expiresIn,
+    });
   } catch (err) {
     return {
       props: {
@@ -48,17 +67,21 @@ export const getServerSideProps: GetServerSideProps<
     };
   }
 
-  if (!appAccessToken) {
-    return {
-      props: {
-        appAccessTokenErrorMessage:
-          "An unknown error occurred attempting to get the app access token.",
-      },
-    };
-  }
+  const prevUserAccessToken = getCookie("user-access-token", {
+    req,
+    res,
+    path: "/",
+  });
+  const prevUserRefreshToken = getCookie("user-refresh-token", {
+    req,
+    res,
+    path: "/",
+  });
 
-  let userAccessToken = null;
-  let userRefreshToken = null;
+  let userAccessToken =
+    typeof prevUserAccessToken === "string" ? prevUserAccessToken : null;
+  let userRefreshToken =
+    typeof prevUserRefreshToken === "string" ? prevUserRefreshToken : null;
   let userAccessTokenErrorMessage = null;
 
   try {
@@ -69,6 +92,23 @@ export const getServerSideProps: GetServerSideProps<
       const { accessToken, refreshToken } = await getTwitchUserAccessToken(
         twitchAuthCode
       );
+
+      setCookie("user-access-token", accessToken, {
+        req,
+        res,
+        path: "/",
+        // Twitch's auth response supplies an `expiresIn` property, but their
+        // documentation recommends against its use. Also, the refresh response
+        // does not return this property, so we always set the maxAge to 1 year
+        // and manage its removal ourselves
+        maxAge: 60 * 60 * 24 * 365,
+      });
+      setCookie("user-refresh-token", refreshToken, {
+        req,
+        res,
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+      });
 
       userAccessToken = accessToken;
       userRefreshToken = refreshToken;
@@ -91,10 +131,10 @@ export const getServerSideProps: GetServerSideProps<
 };
 
 const Home: NextPage = ({
-  appAccessToken: aat,
+  appAccessToken,
   appAccessTokenErrorMessage,
-  userAccessToken: uat,
-  userRefreshToken: urt,
+  userAccessToken,
+  userRefreshToken,
 }: HomeProps) => {
   const router = useRouter();
 
@@ -104,38 +144,11 @@ const Home: NextPage = ({
     }
   }, [router]);
 
-  const [appAccessToken] = usePersistentState("app-access-token", aat, {
-    updateWhenInitialStateChanges: () => !!aat,
-  });
-  const [userAccessToken] = usePersistentState("user-access-token", uat, {
-    updateWhenInitialStateChanges: () => !!uat,
-  });
-  const [userRefreshToken] = usePersistentState("user-refresh-token", urt, {
-    updateWhenInitialStateChanges: () => !!urt,
-  });
-
   const { current: currentChannels } = useRef(["lirik"]);
   const [joinedChannelUserNames, setJoinedChannelUserNames] =
     usePersistentState("joined-channels", currentChannels);
 
-  const { data: currentUser } = useQuery(
-    ["user", userAccessToken],
-    async () => {
-      if (!userAccessToken) {
-        return null;
-      }
-
-      const res = await getTwitchUsers();
-
-      return res.data[0];
-    },
-    {
-      retry: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-    }
-  );
+  const { data: currentUser } = useCurrentUser();
 
   const { data: joinedChannelUsers } = useQuery(
     ["user", ...joinedChannelUserNames, appAccessToken],
@@ -187,37 +200,51 @@ const Home: NextPage = ({
     );
   }
 
+  let cookies: Record<string, string> = {
+    "app-access-token": appAccessToken,
+  };
+
+  if (userAccessToken && userRefreshToken) {
+    cookies = {
+      ...cookies,
+      "user-access-token": userAccessToken,
+      "user-refresh-token": userRefreshToken,
+    };
+  }
+
   return (
-    <div
-      className="
+    <CookieProvider value={cookies}>
+      <div
+        className="
         h-full w-full grid
         text-slate-800 bg-slate-300
         dark:bg-neutral-900 dark:text-slate-300
       "
-      style={{
-        gridTemplateColumns: "min-content minmax(0, 1fr)",
-      }}
-    >
-      <Sidebar
-        currentChannel={currentChannel}
-        appAccessToken={appAccessToken}
-        userId={currentUser?.id}
-        userAccessToken={userAccessToken}
-        userRefreshToken={userRefreshToken}
-        onChannelClick={(channelUserName) => {
-          setJoinedChannelUserNames([channelUserName]);
-          setCurrentChannel(channelUserName);
+        style={{
+          gridTemplateColumns: "min-content minmax(0, 1fr)",
         }}
-      />
-      <Chat
-        currentChannel={currentChannel}
-        chatClient={chatClient}
-        bttvChannelEmotes={bttvChannelEmotes}
-        channels={channels}
-        sevenTvChannelEmotes={sevenTvChannelEmotes}
-        setCurrentChannel={setCurrentChannel}
-      />
-    </div>
+      >
+        <Sidebar
+          currentChannel={currentChannel}
+          appAccessToken={
+            typeof appAccessToken === "string" ? appAccessToken : null
+          }
+          userId={currentUser?.id}
+          onChannelClick={(channelUserName) => {
+            setJoinedChannelUserNames([channelUserName]);
+            setCurrentChannel(channelUserName);
+          }}
+        />
+        <Chat
+          currentChannel={currentChannel}
+          chatClient={chatClient}
+          bttvChannelEmotes={bttvChannelEmotes}
+          channels={channels}
+          sevenTvChannelEmotes={sevenTvChannelEmotes}
+          setCurrentChannel={setCurrentChannel}
+        />
+      </div>
+    </CookieProvider>
   );
 };
 

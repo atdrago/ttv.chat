@@ -2,25 +2,26 @@ import { useQuery } from "@tanstack/react-query";
 import classNames from "classnames";
 import Image from "next/image";
 
+import { useCookieContext } from "hooks/useCookieContext";
 import { getTwitchFollowedChannels } from "lib/getTwitchFollowedChannels";
 import { getTwitchUsers } from "lib/getTwitchUsers";
 import { TwitchChannel } from "types";
 
 interface SidebarProps {
-  currentChannel?: string;
   appAccessToken?: string | null | undefined;
-  userAccessToken?: string | null | undefined;
-  userRefreshToken?: string | null | undefined;
-  userId?: string;
+  currentChannel?: string;
   onChannelClick?: (channelUserName: string) => void;
+  userId?: string;
 }
 
 export const Sidebar = ({
-  currentChannel,
-  userId,
   appAccessToken,
+  currentChannel,
   onChannelClick,
+  userId,
 }: SidebarProps) => {
+  const { cookies } = useCookieContext();
+
   const { data: followedChannels } = useQuery<{ data: TwitchChannel[] }>(
     ["followed"],
     async () => {
@@ -62,14 +63,19 @@ export const Sidebar = ({
     }
   );
 
+  const isSidebarVisible =
+    cookies["user-access-token"] &&
+    followedChannelUsers &&
+    followedChannelUsers.length > 0;
+
   return (
     <nav
       className={classNames("bg-neutral-900", {
         "z-1 p-2 pt-5 sm:p-5 h-full overflow-auto flex-shrink-0 border-r border-neutral-700 shadow-md shadow-neutral-900":
-          followedChannelUsers && followedChannelUsers.length > 0,
+          isSidebarVisible,
       })}
     >
-      {followedChannelUsers && followedChannelUsers.length > 0 ? (
+      {isSidebarVisible ? (
         <ul className="flex flex-col gap-1 w-9">
           {followedChannelUsers?.map(({ login, profile_image_url }) => (
             <li key={login}>
