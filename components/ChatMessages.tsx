@@ -15,10 +15,11 @@ export const ChatMessages = ({ messages, channel }: ChatMessagesProps) => {
   const scrollTopRef = useRef(0);
   const scrollHeightRef = useRef(0);
   const [cache] = useState<CellMeasurerCache>(
-    new CellMeasurerCache({
-      fixedWidth: true,
-      defaultHeight: 32,
-    })
+    () =>
+      new CellMeasurerCache({
+        fixedWidth: true,
+        defaultHeight: 32,
+      })
   );
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
 
