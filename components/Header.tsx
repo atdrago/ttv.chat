@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { TwitchLogo, User, UserList } from "phosphor-react";
 
-import { useCookieContext } from "hooks/useCookieContext";
+import { useCookies } from "hooks/useCookiesContext";
 import { TwitchUser } from "types";
 
 interface HeaderProps {
@@ -11,7 +11,7 @@ interface HeaderProps {
 }
 
 export const Header = ({ currentChannel, joinedChannelUsers }: HeaderProps) => {
-  const { cookies, deleteCookie } = useCookieContext();
+  const { cookies, deleteCookie } = useCookies();
 
   const twitchLoginHref = new URL(
     `https://id.twitch.tv/oauth2/authorize?${new URLSearchParams({

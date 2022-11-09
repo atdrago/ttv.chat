@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import classNames from "classnames";
 import Image from "next/image";
 
-import { useCookieContext } from "hooks/useCookieContext";
+import { useCookies } from "hooks/useCookiesContext";
 import { getTwitchFollowedChannels } from "lib/getTwitchFollowedChannels";
 import { getTwitchUsers } from "lib/getTwitchUsers";
 import { TwitchChannel } from "types";
@@ -20,7 +20,7 @@ export const Sidebar = ({
   onChannelClick,
   userId,
 }: SidebarProps) => {
-  const { cookies } = useCookieContext();
+  const { cookies } = useCookies();
 
   const { data: followedChannels } = useQuery<{ data: TwitchChannel[] }>(
     ["followed"],

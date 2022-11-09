@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 import { Chat } from "components/Chat";
 import { Sidebar } from "components/Sidebar";
 import { useChatClient } from "hooks/useChatClient";
-import { useCookieContext } from "hooks/useCookieContext";
+import { useCookies } from "hooks/useCookiesContext";
 import { useCurrentUser } from "hooks/useCurrentUser";
 import { useEmotes } from "hooks/useEmotes";
 import { usePersistentState } from "hooks/usePersistentState";
@@ -15,7 +15,7 @@ import { notNullOrUndefined } from "lib/notNullOrUndefined";
 
 const Home: NextPage = () => {
   const router = useRouter();
-  const { cookies } = useCookieContext();
+  const { cookies } = useCookies();
 
   const appAccessToken = cookies["app-access-token"];
 

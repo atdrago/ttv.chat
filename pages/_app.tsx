@@ -11,7 +11,7 @@ import App from "next/app";
 import type { AppContext, AppInitialProps, AppProps } from "next/app";
 import { useState } from "react";
 
-import { CookieProvider } from "hooks/useCookieContext";
+import { CookiesProvider } from "hooks/useCookiesContext";
 import { getTwitchAppAccessToken } from "lib/server/getTwitchAppAccessToken";
 import { getTwitchUserAccessToken } from "lib/server/getTwitchUserAccessToken";
 
@@ -164,13 +164,13 @@ function MyApp({ Component, pageProps }: AppProps<PageProps>) {
   }
 
   return (
-    <CookieProvider value={cookies}>
+    <CookiesProvider value={cookies}>
       <QueryClientProvider client={queryClient}>
         <Hydrate state={pageProps.dehydratedState}>
           <Component {...pageProps} />
         </Hydrate>
       </QueryClientProvider>
-    </CookieProvider>
+    </CookiesProvider>
   );
 }
 

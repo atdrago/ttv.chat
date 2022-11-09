@@ -1,6 +1,6 @@
 import { getCookie } from "cookies-next";
 
-import { deleteCookie, setCookie } from "hooks/useCookieContext";
+import { deleteCookie, setCookie } from "hooks/useCookiesContext";
 
 /**
  * Fetch, but attempt to refresh the userAccessToken if the response to the
