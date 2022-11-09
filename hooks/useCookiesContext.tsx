@@ -4,7 +4,13 @@ import {
   getCookies as nextGetCookies,
   setCookie as nextSetCookie,
 } from "cookies-next";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 type CookiesState = Record<string, CookieValueTypes>;
 
@@ -82,23 +88,29 @@ export const CookiesProvider = ({
     };
   }, []);
 
-  const deleteCookieProxy: typeof nextDeleteCookie = (key, options) => {
-    nextDeleteCookie(key, options);
-    setCookies((prevCookies) => {
-      const nextCookies = { ...prevCookies };
-      delete nextCookies[key];
+  const deleteCookieProxy: typeof nextDeleteCookie = useCallback(
+    (key, options) => {
+      nextDeleteCookie(key, options);
+      setCookies((prevCookies) => {
+        const nextCookies = { ...prevCookies };
+        delete nextCookies[key];
 
-      return nextCookies;
-    });
-  };
+        return nextCookies;
+      });
+    },
+    []
+  );
 
-  const setCookieProxy: typeof nextSetCookie = (key, data, options) => {
-    nextSetCookie(key, data, options);
-    setCookies((prevCookies) => ({
-      ...prevCookies,
-      [key]: data,
-    }));
-  };
+  const setCookieProxy: typeof nextSetCookie = useCallback(
+    (key, data, options) => {
+      nextSetCookie(key, data, options);
+      setCookies((prevCookies) => ({
+        ...prevCookies,
+        [key]: data,
+      }));
+    },
+    []
+  );
 
   return (
     <CookiesContext.Provider
