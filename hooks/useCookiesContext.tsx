@@ -14,8 +14,10 @@ import {
 
 type CookiesState = Record<string, CookieValueTypes>;
 
-interface CookiesContextValue<TValue extends CookiesState = CookiesState> {
-  cookies: TValue;
+interface CookiesContextValue<
+  TCookiesState extends CookiesState = CookiesState
+> {
+  cookies: TCookiesState;
   deleteCookie: typeof nextDeleteCookie;
   setCookie: typeof nextSetCookie;
 }
