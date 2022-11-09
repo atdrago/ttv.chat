@@ -32,7 +32,7 @@ const CookiesContext = createContext<CookiesContextValue>({
  * Use this hook when you need to access or change cookies inside a component.
  *
  * @example
- * const { cookies, deleteCookie, setCookie } = useCookiesContext();
+ * const { cookies, deleteCookie, setCookie } = useCookies();
  *
  * return cookies["token"] ? (
  *   <button onClick={() => deleteCookie("token")}>Logout</button>
