@@ -49,6 +49,9 @@ function reducer<TValue extends State = State>(state: TValue, action: Action) {
 
       return nextState;
     }
+    case "setAll": {
+      return { ...action.cookies };
+    }
     default:
       return state;
   }
