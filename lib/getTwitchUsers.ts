@@ -1,4 +1,4 @@
-import { fetchWithAuth } from "lib/server/fetchWithAuth";
+import { fetchWithAuth } from "lib/client/fetchWithAuth";
 import { TwitchUser } from "types";
 
 type GetTwitchUsersOptions = { userNames?: string[] };

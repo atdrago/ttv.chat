@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { fetchWithAuth } from "lib/server/fetchWithAuth";
+import { fetchWithAuth } from "lib/client/fetchWithAuth";
 import { TwitchUser } from "types";
 
 export const useCurrentUser = () => {
