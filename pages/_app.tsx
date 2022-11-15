@@ -85,11 +85,11 @@ const getInitialProps = async (
     typeof prevUserRefreshToken === "string" ? prevUserRefreshToken : null;
   let userAccessTokenErrorMessage = null;
 
-  try {
-    const twitchAuthCode =
-      query.code && typeof query.code === "string" ? query.code : null;
+  const twitchAuthCode =
+    query.code && typeof query.code === "string" ? query.code : null;
 
-    if (twitchAuthCode) {
+  if (twitchAuthCode) {
+    try {
       const { accessToken, refreshToken } = await getTwitchUserAccessToken(
         twitchAuthCode
       );
@@ -113,12 +113,66 @@ const getInitialProps = async (
 
       userAccessToken = accessToken;
       userRefreshToken = refreshToken;
+    } catch (err) {
+      userAccessTokenErrorMessage =
+        err instanceof Error
+          ? `${err.message}`
+          : "An unknown error occurred attempting to get the user access token.";
     }
-  } catch (err) {
-    userAccessTokenErrorMessage =
-      err instanceof Error
-        ? err.message
-        : "An unknown error occurred attempting to get the user access token.";
+  } else if (userAccessToken) {
+    const validateResponse = await fetch(
+      "https://id.twitch.tv/oauth2/validate",
+      {
+        headers: {
+          Authorization: `Bearer ${userAccessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const validateResponseJson = await validateResponse.json();
+
+    if (validateResponseJson.status === 401) {
+      try {
+        const refreshResponse = await fetch("api/refresh", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userRefreshToken,
+          }),
+        });
+
+        const refreshResponseJson = await refreshResponse.json();
+
+        if (
+          refreshResponseJson.access_token &&
+          refreshResponseJson.refresh_token
+        ) {
+          setCookie("user-access-token", refreshResponseJson.access_token, {
+            req,
+            res,
+            path: "/",
+            maxAge: 60 * 60 * 24 * 365,
+          });
+          setCookie("user-refresh-token", refreshResponseJson.refresh_token, {
+            req,
+            res,
+            path: "/",
+            maxAge: 60 * 60 * 24 * 365,
+          });
+
+          userAccessToken = refreshResponseJson.access_token;
+          userRefreshToken = refreshResponseJson.refresh_token;
+        }
+      } catch (err) {
+        userAccessTokenErrorMessage =
+          err instanceof Error
+            ? `Could not refresh user access token: ${err.message}`
+            : "An unknown error occurred attempting to refresh the user access token.";
+      }
+    }
   }
 
   return {
