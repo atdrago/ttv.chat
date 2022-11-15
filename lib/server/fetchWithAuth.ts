@@ -65,7 +65,7 @@ export const fetchWithAuth = async <TResponse = any>(
       path: "/",
       maxAge: 60 * 60 * 24 * 365,
     });
-    setCookie("user-access-token", refreshResponseJson.refresh_token, {
+    setCookie("user-refresh-token", refreshResponseJson.refresh_token, {
       path: "/",
       maxAge: 60 * 60 * 24 * 365,
     });
