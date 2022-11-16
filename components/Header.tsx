@@ -5,12 +5,10 @@ import { useCookies } from "hooks/useCookiesContext";
 import { TwitchUser } from "types";
 
 interface HeaderProps {
-  currentChannel: string;
-  onCurrentChannelChange: (channelUserName: string) => void;
-  joinedChannelUsers: TwitchUser[];
+  currentChannelUser?: TwitchUser;
 }
 
-export const Header = ({ currentChannel, joinedChannelUsers }: HeaderProps) => {
+export const Header = ({ currentChannelUser }: HeaderProps) => {
   const { cookies, deleteCookie } = useCookies();
 
   const twitchLoginHref = new URL(
@@ -20,10 +18,6 @@ export const Header = ({ currentChannel, joinedChannelUsers }: HeaderProps) => {
       response_type: "code",
       scope: "chat:read chat:edit user:read:follows",
     })}`
-  );
-
-  const currentChannelUser = joinedChannelUsers.find(
-    ({ login }) => login === currentChannel
   );
 
   return (
@@ -62,7 +56,7 @@ export const Header = ({ currentChannel, joinedChannelUsers }: HeaderProps) => {
               "
             />
           )}
-          <span className="font-bold text-lg">{currentChannel}</span>
+          <span className="font-bold text-lg">{currentChannelUser.login}</span>
         </h1>
       ) : null}
       {!cookies["user-access-token"] ? (

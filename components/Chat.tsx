@@ -1,5 +1,5 @@
 import { ChatClient } from "@twurple/chat";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ChatMessages } from "components/ChatMessages";
 import { Header } from "components/Header";
@@ -8,28 +8,20 @@ import { BttvEmote, Message, SevenTvEmote, TwitchUser } from "types";
 
 interface ChatProps {
   bttvChannelEmotes: Record<string, Record<string, BttvEmote>>;
-  channels: TwitchUser[];
   sevenTvChannelEmotes: Record<string, Record<string, SevenTvEmote>>;
   chatClient: ChatClient | undefined;
-  currentChannel: string;
-  setCurrentChannel: Dispatch<SetStateAction<string>>;
+  currentChannelUser: TwitchUser;
 }
 
-const emojiRegexp = /(\p{EPres}|\p{ExtPict})(\u200d(\p{EPres}|\p{ExtPict}))*/gu;
+const emojiRegexp = /(\p{EPres}|\p{ExtPict})(\u200d(\p{EPres}|\p{ExtPict}))/gu;
 
 export const Chat = ({
   chatClient,
-  channels,
-  currentChannel,
   bttvChannelEmotes,
   sevenTvChannelEmotes,
-  setCurrentChannel,
+  currentChannelUser,
 }: ChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
-
-  useEffect(() => {
-    setMessages([]);
-  }, [currentChannel]);
 
   useEffect(() => {
     const messageHandler = chatClient?.onMessage((channel, user, text, msg) => {
@@ -41,7 +33,7 @@ export const Chat = ({
               part.text
                 .split(" ")
                 .map((word) => {
-                  const { login } = channels[0];
+                  const { login } = currentChannelUser;
 
                   if (word.startsWith("@")) {
                     return `<b>${word}</b>`;
@@ -145,19 +137,15 @@ export const Chat = ({
         chatClient.removeListener(messageHandler);
       }
     };
-  }, [bttvChannelEmotes, channels, chatClient, sevenTvChannelEmotes]);
+  }, [bttvChannelEmotes, chatClient, currentChannelUser, sevenTvChannelEmotes]);
 
   return (
     <div
       className="h-full w-full max-w-full max-h-full grid overflow-hidden bg-slate-800"
       style={{ gridTemplateRows: "min-content minmax(0, 1fr)" }}
     >
-      <Header
-        joinedChannelUsers={channels}
-        currentChannel={currentChannel}
-        onCurrentChannelChange={setCurrentChannel}
-      />
-      <ChatMessages messages={messages} channel={currentChannel} />
+      <Header currentChannelUser={currentChannelUser} />
+      <ChatMessages messages={messages} />
     </div>
   );
 };

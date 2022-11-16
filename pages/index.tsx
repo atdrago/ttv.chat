@@ -1,77 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
-import type { NextPage } from "next";
+import type { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
-import { Chat } from "components/Chat";
+import { Header } from "components/Header";
 import { Sidebar } from "components/Sidebar";
-import { useChatClient } from "hooks/useChatClient";
-import { useCookies } from "hooks/useCookiesContext";
-import { useCurrentUser } from "hooks/useCurrentUser";
-import { useEmotes } from "hooks/useEmotes";
-import { usePersistentState } from "hooks/usePersistentState";
-import { getTwitchUsers } from "lib/getTwitchUsers";
-import { notNullOrUndefined } from "lib/notNullOrUndefined";
 
-const Home: NextPage = () => {
+// This empty getServerSideProps function is only necessary so that
+// App.getInitialProps runs on the server
+export const getServerSideProps: GetServerSideProps = async () => ({
+  props: {},
+});
+
+const HomePage: NextPage = () => {
   const router = useRouter();
-  const { cookies } = useCookies();
-
-  const appAccessToken = cookies["app-access-token"];
 
   useEffect(() => {
     if (router.query["code"]) {
       router.replace("/", undefined, { shallow: true });
     }
   }, [router]);
-
-  const { current: currentChannels } = useRef(["lirik"]);
-  const [joinedChannelUserNames, setJoinedChannelUserNames] =
-    usePersistentState("joined-channels", currentChannels);
-
-  const { data: currentUser } = useCurrentUser();
-
-  const { data: joinedChannelUsers } = useQuery(
-    ["user", ...joinedChannelUserNames, appAccessToken],
-    async () => {
-      if (!appAccessToken) {
-        return null;
-      }
-
-      const res = await getTwitchUsers({
-        userNames: joinedChannelUserNames,
-      });
-
-      return res.data;
-    },
-    {
-      retry: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-    }
-  );
-
-  const chatClient = useChatClient({
-    channels: joinedChannelUserNames,
-  });
-
-  const channels = !joinedChannelUsers
-    ? joinedChannelUserNames.map((login) => ({ login }))
-    : joinedChannelUserNames
-        .map((login) => {
-          return joinedChannelUsers?.find(
-            ({ login: channelUserLogin }) => login === channelUserLogin
-          );
-        })
-        .filter(notNullOrUndefined);
-
-  const [currentChannel, setCurrentChannel] = usePersistentState(
-    "current-channel",
-    channels[0]?.login
-  );
-
-  const { bttvChannelEmotes, sevenTvChannelEmotes } = useEmotes(channels);
 
   return (
     <div
@@ -84,27 +31,15 @@ const Home: NextPage = () => {
         gridTemplateColumns: "min-content minmax(0, 1fr)",
       }}
     >
-      <Sidebar
-        currentChannel={currentChannel}
-        appAccessToken={
-          typeof appAccessToken === "string" ? appAccessToken : null
-        }
-        userId={currentUser?.id}
-        onChannelClick={(channelUserName) => {
-          setJoinedChannelUserNames([channelUserName]);
-          setCurrentChannel(channelUserName);
-        }}
-      />
-      <Chat
-        currentChannel={currentChannel}
-        chatClient={chatClient}
-        bttvChannelEmotes={bttvChannelEmotes}
-        channels={channels}
-        sevenTvChannelEmotes={sevenTvChannelEmotes}
-        setCurrentChannel={setCurrentChannel}
-      />
+      <Sidebar />
+      <div
+        className="h-full w-full max-w-full max-h-full grid overflow-hidden bg-slate-800"
+        style={{ gridTemplateRows: "min-content minmax(0, 1fr)" }}
+      >
+        <Header />
+      </div>
     </div>
   );
 };
 
-export default Home;
+export default HomePage;

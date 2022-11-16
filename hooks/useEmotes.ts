@@ -3,51 +3,49 @@ import { useMemo } from "react";
 
 import { BttvEmote, SevenTvEmote, TwitchUser } from "types";
 
-export const useEmotes = (channels: TwitchUser[] = []) => {
+export const useEmotes = (channel?: TwitchUser | null) => {
   const bttvResults = useQueries({
     queries: [
-      ...channels.flatMap(({ id, login }) => [
-        {
-          queryKey: ["bttv", id],
-          queryFn: async () => {
-            const bttvResponse = await fetch(
-              `https://api.betterttv.net/3/cached/users/twitch/${id}`,
-              { method: "GET" }
-            );
+      {
+        queryKey: ["bttv", channel?.id],
+        queryFn: async () => {
+          const bttvResponse = await fetch(
+            `https://api.betterttv.net/3/cached/users/twitch/${channel?.id}`,
+            { method: "GET" }
+          );
 
-            const data = await bttvResponse.json();
+          const data = await bttvResponse.json();
 
-            return {
-              login,
-              response: [
-                ...(data.channelEmotes ?? []),
-                ...(data.sharedEmotes ?? []),
-              ],
-            };
-          },
-          enabled: !!id,
-          retry: false,
-          refetchOnMount: false,
-          refetchOnReconnect: false,
-          refetchOnWindowFocus: false,
+          return {
+            login: channel?.login,
+            response: [
+              ...(data.channelEmotes ?? []),
+              ...(data.sharedEmotes ?? []),
+            ],
+          };
         },
-        {
-          queryKey: ["ffz", id],
-          queryFn: async () => {
-            const ffzResponse = await fetch(
-              `https://api.betterttv.net/3/cached/frankerfacez/users/twitch/${id}`,
-              { method: "GET" }
-            );
+        enabled: !!channel?.id,
+        retry: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
+      },
+      {
+        queryKey: ["ffz", channel?.id],
+        queryFn: async () => {
+          const ffzResponse = await fetch(
+            `https://api.betterttv.net/3/cached/frankerfacez/users/twitch/${channel?.id}`,
+            { method: "GET" }
+          );
 
-            return { login, response: await ffzResponse.json() };
-          },
-          enabled: !!id,
-          retry: false,
-          refetchOnMount: false,
-          refetchOnReconnect: false,
-          refetchOnWindowFocus: false,
+          return { login: channel?.login, response: await ffzResponse.json() };
         },
-      ]),
+        enabled: !!channel?.id,
+        retry: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
+      },
       {
         queryKey: ["bttv"],
         queryFn: async () => {
@@ -68,21 +66,25 @@ export const useEmotes = (channels: TwitchUser[] = []) => {
 
   const sevenTvResults = useQueries({
     queries: [
-      ...channels.map(({ login }) => ({
-        queryKey: ["7tv", login],
+      {
+        queryKey: ["7tv", channel?.login],
         queryFn: async () => {
           const sevenTvResponse = await fetch(
-            `https://api.7tv.app/v2/users/${login}/emotes`,
+            `https://api.7tv.app/v2/users/${channel?.login}/emotes`,
             { method: "GET" }
           );
 
-          return { login, response: await sevenTvResponse.json() };
+          return {
+            login: channel?.login,
+            response: await sevenTvResponse.json(),
+          };
         },
+        enabled: !!channel?.login,
         retry: false,
         refetchOnMount: false,
         refetchOnReconnect: false,
         refetchOnWindowFocus: false,
-      })),
+      },
       {
         queryKey: ["7tv"],
         queryFn: async () => {

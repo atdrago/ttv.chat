@@ -1,36 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
 import classNames from "classnames";
 import Image from "next/image";
+import Link from "next/link";
 
 import { useCookies } from "hooks/useCookiesContext";
+import { useCurrentUser } from "hooks/useCurrentUser";
 import { getTwitchFollowedChannels } from "lib/getTwitchFollowedChannels";
 import { getTwitchUsers } from "lib/getTwitchUsers";
 import { TwitchChannel } from "types";
 
 interface SidebarProps {
-  appAccessToken?: string | null | undefined;
   currentChannel?: string;
-  onChannelClick?: (channelUserName: string) => void;
-  userId?: string;
 }
 
-export const Sidebar = ({
-  appAccessToken,
-  currentChannel,
-  onChannelClick,
-  userId,
-}: SidebarProps) => {
+export const Sidebar = ({ currentChannel }: SidebarProps) => {
   const { cookies } = useCookies();
+
+  const { data: currentUser } = useCurrentUser();
 
   const { data: followedChannels } = useQuery<{ data: TwitchChannel[] }>(
     ["followed"],
     async () => {
-      if (!userId) return null;
+      if (!currentUser?.id) return null;
 
-      return getTwitchFollowedChannels(userId);
+      return getTwitchFollowedChannels(currentUser.id);
     },
     {
-      enabled: !!userId,
+      enabled: !!currentUser?.id,
       retry: false,
       refetchOnMount: false,
       refetchOnReconnect: false,
@@ -55,7 +51,7 @@ export const Sidebar = ({
       );
     },
     {
-      enabled: !!appAccessToken && followedChannelUserNames.length > 0,
+      enabled: followedChannelUserNames.length > 0,
       retry: false,
       refetchOnMount: false,
       refetchOnReconnect: false,
@@ -79,14 +75,7 @@ export const Sidebar = ({
         <ul className="flex flex-col gap-1 w-9">
           {followedChannelUsers?.map(({ login, profile_image_url }) => (
             <li key={login}>
-              <button
-                className="cursor-pointer"
-                onClick={() => {
-                  if (onChannelClick) {
-                    onChannelClick(login);
-                  }
-                }}
-              >
+              <Link className="cursor-pointer" href={`/${login}`}>
                 {profile_image_url ? (
                   <Image
                     alt=""
@@ -102,8 +91,7 @@ export const Sidebar = ({
                     width={36}
                   />
                 ) : null}
-              </button>
-              {/* <span className="text-lg leading-6">{login}</span> */}
+              </Link>
             </li>
           ))}
         </ul>

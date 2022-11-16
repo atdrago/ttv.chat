@@ -1,5 +1,5 @@
 import { ArrowDown } from "phosphor-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { AutoSizer, CellMeasurerCache, List } from "react-virtualized";
 
 import { ChatRow } from "components/ChatRow";
@@ -7,10 +7,9 @@ import { Message } from "types";
 
 interface ChatMessagesProps {
   messages: Message[];
-  channel: string;
 }
 
-export const ChatMessages = ({ messages, channel }: ChatMessagesProps) => {
+export const ChatMessages = ({ messages }: ChatMessagesProps) => {
   const listRef = useRef();
   const scrollTopRef = useRef(0);
   const scrollHeightRef = useRef(0);
@@ -22,11 +21,6 @@ export const ChatMessages = ({ messages, channel }: ChatMessagesProps) => {
       })
   );
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
-
-  useEffect(() => {
-    cache.clearAll();
-    setIsPinnedToBottom(true);
-  }, [cache, channel]);
 
   return (
     <div>

@@ -1,26 +1,22 @@
 import { ChatClient } from "@twurple/chat";
 import { useEffect, useState } from "react";
 
-interface UseChatClientProps {
-  accessToken?: string;
-  refreshToken?: string;
-  channels: string[];
-}
-
-export const useChatClient = ({ channels }: UseChatClientProps) => {
+export const useChatClient = (channel?: string | null) => {
   const [chatClient, setChatClient] = useState<ChatClient>();
 
   useEffect(() => {
+    if (!channel) return;
+
     setChatClient(() => {
       const nextChatClient = new ChatClient({
-        channels,
+        channels: [channel],
       });
 
       nextChatClient.connect();
 
       return nextChatClient;
     });
-  }, [channels]);
+  }, [channel]);
 
   return chatClient;
 };

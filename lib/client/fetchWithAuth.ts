@@ -2,6 +2,9 @@ import { getCookie } from "cookies-next";
 
 import { deleteCookie, setCookie } from "hooks/useCookiesContext";
 
+// TODO: This really only works client-side because of the usage of
+// `deleteCookie` and `setCookie`, which use `window`, and because `getCookie`
+// isn't passed a req or res. Add a function that works for doing this server-side
 /**
  * Fetch, but attempt to refresh the userAccessToken if the response to the
  * initial request has a 401 status.
