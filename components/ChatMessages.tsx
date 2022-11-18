@@ -28,6 +28,7 @@ export const ChatMessages = ({ messages }: ChatMessagesProps) => {
         {({ width, height }) => {
           return (
             <List
+              className="text-sm"
               ref={listRef}
               onScroll={({ clientHeight, scrollHeight, scrollTop }) => {
                 if (isPinnedToBottom) {

@@ -37,7 +37,7 @@ export const ChatRow = memo(function ChatRowComponent({
           <p
             ref={registerChild}
             style={style}
-            className={classNames("p-2 align-sub break-words", {
+            className={classNames("px-2 py-1 align-sub break-words", {
               "bg-slate-700": isAtStreamer,
             })}
           >
