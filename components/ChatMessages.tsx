@@ -2,6 +2,7 @@ import { usePathname } from "next/navigation";
 import { ArrowDown } from "phosphor-react";
 import { useEffect, useRef, useState } from "react";
 import { AutoSizer, CellMeasurerCache, List } from "react-virtualized";
+import { useDebounce } from "use-debounce";
 
 import { ChatRow } from "components/ChatRow";
 import { Message } from "types";
@@ -18,16 +19,28 @@ export const ChatMessages = ({ messages }: ChatMessagesProps) => {
     () =>
       new CellMeasurerCache({
         fixedWidth: true,
-        defaultHeight: 32,
+        defaultHeight: 28,
       })
   );
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
   const pathname = usePathname();
+  const [windowWidth, setWindowWidth] = useState(0);
+  const [windowWidthDebounced] = useDebounce(windowWidth, 250);
 
   useEffect(() => {
     cache.clearAll();
     setIsPinnedToBottom(true);
-  }, [cache, pathname]);
+  }, [cache, pathname, windowWidthDebounced]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <div>
@@ -61,7 +74,7 @@ export const ChatMessages = ({ messages }: ChatMessagesProps) => {
               }}
               width={width}
               height={height}
-              overscanRowCount={100}
+              overscanRowCount={20}
               rowCount={messages.length}
               deferredMeasurementCache={cache}
               rowHeight={cache.rowHeight}
