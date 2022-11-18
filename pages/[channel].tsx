@@ -2,7 +2,6 @@ import type { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
 
 import { Chat } from "components/Chat";
-import { Sidebar } from "components/Sidebar";
 import { useChatClient } from "hooks/useChatClient";
 import { useEmotes } from "hooks/useEmotes";
 import { useTwitchUser } from "hooks/useTwitchUser";
