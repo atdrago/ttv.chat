@@ -50,7 +50,13 @@ export const ChatRow = memo(function ChatRowComponent({
                 color: color
                   ? allyColor(
                       color,
-                      colorScheme === "dark" ? "#1e293b" : "#f1f5f9"
+                      colorScheme === "dark"
+                        ? isAtStreamer
+                          ? "#334155"
+                          : "#1e293b"
+                        : isAtStreamer
+                        ? "#e2e8f0"
+                        : "#f1f5f9"
                     )
                   : undefined,
               }}
