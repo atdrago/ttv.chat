@@ -1,5 +1,6 @@
+import { usePathname } from "next/navigation";
 import { ArrowDown } from "phosphor-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AutoSizer, CellMeasurerCache, List } from "react-virtualized";
 
 import { ChatRow } from "components/ChatRow";
@@ -21,6 +22,12 @@ export const ChatMessages = ({ messages }: ChatMessagesProps) => {
       })
   );
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    cache.clearAll();
+    setIsPinnedToBottom(true);
+  }, [cache, pathname]);
 
   return (
     <div>
