@@ -1,99 +1,28 @@
-import { usePathname } from "next/navigation";
 import { ArrowDown } from "phosphor-react";
-import { useEffect, useRef, useState } from "react";
-import { AutoSizer, CellMeasurerCache, List } from "react-virtualized";
-import { useDebounce } from "use-debounce";
+import { useState } from "react";
+import { AutoSizer } from "react-virtualized";
 
-import { ChatRow } from "components/ChatRow";
-import { Message } from "types";
+import { ChatList } from "components/ChatList";
+import { TwitchUser } from "types";
 
 interface ChatMessagesProps {
-  messages: Message[];
+  channelUser: TwitchUser;
 }
 
-export const ChatMessages = ({ messages }: ChatMessagesProps) => {
-  const listRef = useRef();
-  const scrollTopRef = useRef(0);
-  const scrollHeightRef = useRef(0);
-  const [cache] = useState<CellMeasurerCache>(
-    () =>
-      new CellMeasurerCache({
-        fixedWidth: true,
-        defaultHeight: 28,
-      })
-  );
+export const ChatMessages = ({ channelUser }: ChatMessagesProps) => {
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
-  const pathname = usePathname();
-  const [windowWidth, setWindowWidth] = useState(0);
-  const [windowWidthDebounced] = useDebounce(windowWidth, 250);
-
-  useEffect(() => {
-    cache.clearAll();
-    setIsPinnedToBottom(true);
-  }, [cache, pathname, windowWidthDebounced]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   return (
     <div>
       <AutoSizer>
         {({ width, height }) => {
           return (
-            <List
-              className="text-sm"
-              ref={listRef}
-              onScroll={({ clientHeight, scrollHeight, scrollTop }) => {
-                if (isPinnedToBottom) {
-                  const isScrollingUpward = scrollTop < scrollTopRef.current;
-                  const didHeightChange =
-                    scrollHeight !== scrollHeightRef.current;
-
-                  if (isScrollingUpward && !didHeightChange) {
-                    setIsPinnedToBottom(false);
-                  }
-                } else {
-                  const didScrollToBottom =
-                    scrollTop + clientHeight === scrollHeight ||
-                    scrollHeight === 0;
-
-                  if (didScrollToBottom) {
-                    setIsPinnedToBottom(true);
-                  }
-                }
-
-                scrollTopRef.current = scrollTop;
-                scrollHeightRef.current = scrollHeight;
-              }}
+            <ChatList
               width={width}
               height={height}
-              overscanRowCount={20}
-              rowCount={messages.length}
-              deferredMeasurementCache={cache}
-              rowHeight={cache.rowHeight}
-              rowRenderer={({ index, style, parent, isScrolling }) => {
-                const message = messages[index];
-
-                return (
-                  <ChatRow
-                    cache={cache}
-                    index={index}
-                    key={message.id}
-                    message={message}
-                    parent={parent}
-                    style={style}
-                    isScrolling={isScrolling}
-                  />
-                );
-              }}
-              scrollToIndex={isPinnedToBottom ? messages.length - 1 : undefined}
+              channelUser={channelUser}
+              isPinnedToBottom={isPinnedToBottom}
+              onIsPinnedToBottomChange={setIsPinnedToBottom}
             />
           );
         }}
