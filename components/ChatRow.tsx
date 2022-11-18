@@ -1,6 +1,6 @@
 import allyColor from "a11ycolor";
 import classNames from "classnames";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { CellMeasurer, CellMeasurerCache } from "react-virtualized";
 
 import { useColorScheme } from "hooks/useColorScheme";
@@ -26,7 +26,10 @@ export const ChatRow = memo(function ChatRowComponent({
   const { html, color, channelUserName, displayName } = message;
   const colorScheme = useColorScheme();
 
-  const isAtStreamer = new RegExp(`@${channelUserName}`, "i").test(html);
+  const isAtStreamer = useMemo(
+    () => new RegExp(`@${channelUserName}`, "i").test(html),
+    [channelUserName, html]
+  );
 
   return (
     <CellMeasurer
