@@ -247,7 +247,7 @@ function MyApp({ Component, pageProps }: AppProps<PageProps>) {
           <div
             className="
               h-full w-full grid
-              text-slate-800 bg-slate-300
+              bg-neutral-300 text-slate-800
               dark:bg-neutral-900 dark:text-slate-300
             "
             style={{

@@ -1,7 +1,9 @@
+import allyColor from "a11ycolor";
 import classNames from "classnames";
 import { memo } from "react";
 import { CellMeasurer, CellMeasurerCache } from "react-virtualized";
 
+import { useColorScheme } from "hooks/useColorScheme";
 import type { Message } from "types";
 
 interface ChatRowProps {
@@ -39,7 +41,8 @@ export const ChatRow = memo(function ChatRowComponent({
             ref={registerChild}
             style={style}
             className={classNames("px-2 py-1 align-sub break-words", {
-              "bg-slate-700": isAtStreamer,
+              "bg-slate-200": colorScheme === "light" && isAtStreamer,
+              "bg-slate-700": colorScheme === "dark" && isAtStreamer,
             })}
           >
             <b

@@ -141,7 +141,7 @@ export const Chat = ({
 
   return (
     <div
-      className="h-full w-full max-w-full max-h-full grid overflow-hidden bg-slate-800"
+      className="h-full w-full max-w-full max-h-full grid overflow-hidden bg-slate-100 dark:bg-slate-800"
       style={{ gridTemplateRows: "min-content minmax(0, 1fr)" }}
     >
       <Header currentChannelUser={currentChannelUser} />

@@ -31,8 +31,8 @@ export const Header = ({ currentChannelUser }: HeaderProps) => {
     <div
       className="
         p-3
-        dark:bg-neutral-900 dark:text-slate-300
-        border-b border-slate-900
+        bg-neutral-200 text-slate-900 dark:bg-neutral-900 dark:text-slate-300
+        border-b border-slate-400 dark:border-slate-900
         flex gap-3 items-center justify-between
         overflow-x-auto overflow-y-hidden
       "
@@ -70,7 +70,7 @@ export const Header = ({ currentChannelUser }: HeaderProps) => {
         <a
           className="
             text-md rounded bg-violet-600 flex items-center justify-center
-            px-2 py-1 gap-2
+            px-2 py-1 gap-2 text-white
           "
           onClick={() => {
             setCookie("auth-redirect-to", pathname, { path: "/", maxAge: 60 });
@@ -83,7 +83,7 @@ export const Header = ({ currentChannelUser }: HeaderProps) => {
         <button
           className="
             text-md rounded bg-violet-600 flex items-center justify-center
-            px-2 py-1 gap-2
+            px-2 py-1 gap-2 text-white
           "
           onClick={() => {
             deleteCookie("user-access-token");
