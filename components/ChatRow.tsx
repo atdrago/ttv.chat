@@ -22,6 +22,7 @@ export const ChatRow = memo(function ChatRowComponent({
   isScrolling,
 }: ChatRowProps) {
   const { html, color, channelUserName, displayName } = message;
+  const colorScheme = useColorScheme();
 
   const isAtStreamer = new RegExp(`@${channelUserName}`, "i").test(html);
 
@@ -41,7 +42,19 @@ export const ChatRow = memo(function ChatRowComponent({
               "bg-slate-700": isAtStreamer,
             })}
           >
-            <b style={{ color }}>{displayName}</b>:{" "}
+            <b
+              style={{
+                color: color
+                  ? allyColor(
+                      color,
+                      colorScheme === "dark" ? "#1e293b" : "#f1f5f9"
+                    )
+                  : undefined,
+              }}
+            >
+              {displayName}
+            </b>
+            :{" "}
             <span
               dangerouslySetInnerHTML={{ __html: html }}
               onLoadCapture={(event) => {
