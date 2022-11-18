@@ -11,6 +11,7 @@ import App from "next/app";
 import type { AppContext, AppInitialProps, AppProps } from "next/app";
 import { useState } from "react";
 
+import { Sidebar } from "components/Sidebar";
 import { CookiesProvider } from "hooks/useCookiesContext";
 import { getTwitchAppAccessToken } from "lib/server/getTwitchAppAccessToken";
 import { getTwitchUserAccessToken } from "lib/server/getTwitchUserAccessToken";
@@ -90,6 +91,12 @@ const getInitialProps = async (
 
   if (twitchAuthCode) {
     try {
+      const redirectToCookie = getCookie("auth-redirect-to", {
+        req,
+        res,
+        path: "/",
+      });
+
       const { accessToken, refreshToken } = await getTwitchUserAccessToken(
         twitchAuthCode
       );
@@ -111,8 +118,24 @@ const getInitialProps = async (
         maxAge: 60 * 60 * 24 * 365,
       });
 
+      res?.writeHead(301, {
+        Location: typeof redirectToCookie === "string" ? redirectToCookie : "/",
+      });
+      res?.end();
+
       userAccessToken = accessToken;
       userRefreshToken = refreshToken;
+
+      return {
+        ...restAppProps,
+        pageProps: {
+          ...pageProps,
+          appAccessToken,
+          userAccessToken,
+          userAccessTokenErrorMessage,
+          userRefreshToken,
+        },
+      };
     } catch (err) {
       userAccessTokenErrorMessage =
         err instanceof Error
@@ -221,7 +244,19 @@ function MyApp({ Component, pageProps }: AppProps<PageProps>) {
     <CookiesProvider value={cookies}>
       <QueryClientProvider client={queryClient}>
         <Hydrate state={pageProps.dehydratedState}>
-          <Component {...pageProps} />
+          <div
+            className="
+              h-full w-full grid
+              text-slate-800 bg-slate-300
+              dark:bg-neutral-900 dark:text-slate-300
+            "
+            style={{
+              gridTemplateColumns: "min-content minmax(0, 1fr)",
+            }}
+          >
+            <Sidebar />
+            <Component {...pageProps} />
+          </div>
         </Hydrate>
       </QueryClientProvider>
     </CookiesProvider>

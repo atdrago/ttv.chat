@@ -1,4 +1,5 @@
 import { fetchWithAuth } from "lib/client/fetchWithAuth";
+import { TwitchChannel } from "types";
 
 export const getTwitchFollowedChannels = async (userId: string) => {
   const followedChannelsUrl = new URL(
@@ -7,7 +8,7 @@ export const getTwitchFollowedChannels = async (userId: string) => {
     })}`
   );
 
-  const followedResponseJson = await fetchWithAuth(
+  const followedResponseJson: { data: TwitchChannel[] } = await fetchWithAuth(
     followedChannelsUrl.toString(),
     {
       method: "GET",

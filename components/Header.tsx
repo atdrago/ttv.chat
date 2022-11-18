@@ -1,5 +1,7 @@
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { TwitchLogo, User, UserList } from "phosphor-react";
+import { useMemo } from "react";
 
 import { useCookies } from "hooks/useCookiesContext";
 import { TwitchUser } from "types";
@@ -9,15 +11,20 @@ interface HeaderProps {
 }
 
 export const Header = ({ currentChannelUser }: HeaderProps) => {
-  const { cookies, deleteCookie } = useCookies();
+  const { cookies, deleteCookie, setCookie } = useCookies();
+  const pathname = usePathname();
 
-  const twitchLoginHref = new URL(
-    `https://id.twitch.tv/oauth2/authorize?${new URLSearchParams({
-      client_id: process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID,
-      redirect_uri: process.env.NEXT_PUBLIC_TWITCH_AUTH_REDIRECT_URI,
-      response_type: "code",
-      scope: "chat:read chat:edit user:read:follows",
-    })}`
+  const twitchLoginHref = useMemo(
+    () =>
+      new URL(
+        `https://id.twitch.tv/oauth2/authorize?${new URLSearchParams({
+          client_id: process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID,
+          redirect_uri: process.env.NEXT_PUBLIC_TWITCH_AUTH_REDIRECT_URI,
+          response_type: "code",
+          scope: "chat:read chat:edit user:read:follows",
+        })}`
+      ).toString(),
+    []
   );
 
   return (
@@ -62,10 +69,13 @@ export const Header = ({ currentChannelUser }: HeaderProps) => {
       {!cookies["user-access-token"] ? (
         <a
           className="
-          text-md rounded bg-violet-600 flex items-center justify-center
-          px-2 py-1 gap-2
-        "
-          href={twitchLoginHref.toString()}
+            text-md rounded bg-violet-600 flex items-center justify-center
+            px-2 py-1 gap-2
+          "
+          onClick={() => {
+            setCookie("auth-redirect-to", pathname, { path: "/", maxAge: 60 });
+          }}
+          href={twitchLoginHref}
         >
           <TwitchLogo size={18} weight="bold" /> Login
         </a>

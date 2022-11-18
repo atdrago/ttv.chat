@@ -28,24 +28,12 @@ const ChannelPage: NextPage = () => {
   }
 
   return (
-    <div
-      className="
-        h-full w-full grid
-        text-slate-800 bg-slate-300
-        dark:bg-neutral-900 dark:text-slate-300
-      "
-      style={{
-        gridTemplateColumns: "min-content minmax(0, 1fr)",
-      }}
-    >
-      <Sidebar currentChannel={channel} />
-      <Chat
-        bttvChannelEmotes={bttvChannelEmotes}
-        chatClient={chatClient}
-        currentChannelUser={channelUser}
-        sevenTvChannelEmotes={sevenTvChannelEmotes}
-      />
-    </div>
+    <Chat
+      bttvChannelEmotes={bttvChannelEmotes}
+      chatClient={chatClient}
+      currentChannelUser={channelUser}
+      sevenTvChannelEmotes={sevenTvChannelEmotes}
+    />
   );
 };
 

@@ -1,84 +1,31 @@
-import { useQuery } from "@tanstack/react-query";
 import classNames from "classnames";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-import { useCookies } from "hooks/useCookiesContext";
-import { useCurrentUser } from "hooks/useCurrentUser";
-import { getTwitchFollowedChannels } from "lib/getTwitchFollowedChannels";
-import { getTwitchUsers } from "lib/getTwitchUsers";
-import { TwitchChannel } from "types";
+import { useSidebarChannelUsers } from "hooks/useSidebarChannelUsers";
 
-interface SidebarProps {
-  currentChannel?: string;
-}
-
-export const Sidebar = ({ currentChannel }: SidebarProps) => {
-  const { cookies } = useCookies();
-
-  const { data: currentUser } = useCurrentUser();
-
-  const { data: followedChannels } = useQuery<{ data: TwitchChannel[] }>(
-    ["followed"],
-    async () => {
-      if (!currentUser?.id) return null;
-
-      return getTwitchFollowedChannels(currentUser.id);
-    },
-    {
-      enabled: !!currentUser?.id,
-      retry: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-    }
-  );
-
-  const followedChannelUserNames =
-    followedChannels?.data.map(({ user_name }) => user_name) ?? [];
-
-  const { data: followedChannelUsers } = useQuery(
-    ["user", ...followedChannelUserNames],
-    async () => {
-      const res = await getTwitchUsers({
-        userNames: followedChannelUserNames,
-      });
-
-      return res.data.sort(
-        (a, b) =>
-          followedChannelUserNames.indexOf(a.display_name ?? "") -
-          followedChannelUserNames.indexOf(b.display_name ?? "")
-      );
-    },
-    {
-      enabled: followedChannelUserNames.length > 0,
-      retry: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-    }
-  );
-
-  const isSidebarVisible =
-    cookies["user-access-token"] &&
-    followedChannelUsers &&
-    followedChannelUsers.length > 0;
+export const Sidebar = () => {
+  const sidebarChannelUsers = useSidebarChannelUsers();
+  const pathname = usePathname();
+  const currentChannel = pathname?.slice(1) ?? undefined;
 
   return (
     <nav
-      className={classNames("bg-neutral-900", {
-        "z-1 p-2 pt-5 sm:p-5 h-full overflow-auto flex-shrink-0 border-r border-neutral-700 shadow-md shadow-neutral-900":
-          isSidebarVisible,
-      })}
+      className="
+        bg-neutral-900 z-1 p-2 pt-5 h-full overflow-auto flex-shrink-0
+        border-r border-neutral-700 shadow-md shadow-neutral-900
+      "
     >
-      {isSidebarVisible ? (
-        <ul className="flex flex-col gap-1 w-9">
-          {followedChannelUsers?.map(({ login, profile_image_url }) => (
+      <ul className="flex flex-col gap-1 w-9">
+        {sidebarChannelUsers?.map(
+          ({ display_name, login, profile_image_url }) => (
             <li key={login}>
               <Link className="cursor-pointer" href={`/${login}`}>
                 {profile_image_url ? (
                   <Image
-                    alt=""
+                    alt={display_name ?? ""}
+                    title={display_name ?? ""}
                     className={classNames(
                       "block h-9 w-9 text-lg leading-6 rounded-full p-0.5 border-2 border-solid",
                       {
@@ -93,9 +40,9 @@ export const Sidebar = ({ currentChannel }: SidebarProps) => {
                 ) : null}
               </Link>
             </li>
-          ))}
-        </ul>
-      ) : null}
+          )
+        )}
+      </ul>
     </nav>
   );
 };
