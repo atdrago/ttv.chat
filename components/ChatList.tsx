@@ -1,7 +1,5 @@
-import { usePathname } from "next/navigation";
-import { memo, useEffect, useRef, useState } from "react";
-import { CellMeasurerCache, List } from "react-virtualized";
-import { useDebounce } from "use-debounce";
+import { ArrowDown } from "phosphor-react";
+import { useEffect, useRef, useState } from "react";
 
 import { ChatRow } from "components/ChatRow";
 import { useChatClient } from "hooks/useChatClient";
@@ -11,73 +9,23 @@ import type { Message, TwitchUser } from "types";
 
 interface ChatListProps {
   channelUser?: TwitchUser;
-  height: number;
-  width: number;
   isPinnedToBottom?: boolean;
   onIsPinnedToBottomChange?: (isPinnedToBottom: boolean) => void;
 }
 const emojiRegexp = /(\p{EPres}|\p{ExtPict})(\u200d(\p{EPres}|\p{ExtPict}))/gu;
+const MAX_MESSAGES = 300;
+const MESSAGE_BUFFER_SIZE = 200;
 
-// const MAX_MESSAGES = 100;
-// const MESSAGE_BUFFER_SIZE = 50;
-
-export const ChatList = memo(function ChatListMemo({
-  channelUser,
-  width,
-  height,
-  isPinnedToBottom,
-  onIsPinnedToBottomChange = () => null,
-}: ChatListProps) {
-  const scrollTopRef = useRef(0);
-  const scrollHeightRef = useRef(0);
-  const [cache] = useState<CellMeasurerCache>(
-    () =>
-      new CellMeasurerCache({
-        fixedWidth: true,
-        defaultHeight: 32,
-      })
-  );
+export const ChatList = ({ channelUser }: ChatListProps) => {
+  const listRef = useRef<HTMLUListElement>(null);
   const chatClient = useChatClient(channelUser?.login);
   const { bttvChannelEmotes, sevenTvChannelEmotes } = useEmotes(channelUser);
   const [messages, setMessages] = useState<Message[]>([]);
-  const pathname = usePathname();
-  const [windowWidth, setWindowWidth] = useState(0);
-  const [windowWidthDebounced] = useDebounce(windowWidth, 250);
+  const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
 
   useEffect(() => {
     setMessages([]);
   }, [channelUser]);
-
-  useEffect(() => {
-    cache.clearAll();
-    onIsPinnedToBottomChange(true);
-  }, [cache, onIsPinnedToBottomChange, pathname, windowWidthDebounced]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // const isOverMessageThreshold = messages.length > MAX_MESSAGES;
-
-  // useEffect(() => {
-  //   if (isOverMessageThreshold && isPinnedToBottom) {
-  //     setMessages(messages.slice(messages.length - MESSAGE_BUFFER_SIZE));
-  //     cache.clearAll();
-  //     onIsPinnedToBottomChange(true);
-  //   }
-  // }, [
-  //   cache,
-  //   isOverMessageThreshold,
-  //   isPinnedToBottom,
-  //   messages,
-  //   onIsPinnedToBottomChange,
-  // ]);
 
   useEffect(() => {
     const messageHandler = chatClient?.onMessage(
@@ -176,8 +124,9 @@ export const ChatList = memo(function ChatListMemo({
         const { color, displayName } = msg.userInfo;
 
         setMessages((prevMessages) => {
+          // New messages get prepended to the messages array because messages
+          // are displayed using flex-direction: column-reverse;
           return [
-            ...prevMessages,
             {
               id,
               color,
@@ -185,6 +134,7 @@ export const ChatList = memo(function ChatListMemo({
               html,
               channelUserName: target.value.slice(1),
             },
+            ...prevMessages,
           ];
         });
       }
@@ -197,51 +147,49 @@ export const ChatList = memo(function ChatListMemo({
     };
   }, [bttvChannelEmotes, chatClient, channelUser, sevenTvChannelEmotes]);
 
+  const isOverMessageThreshold = messages.length > MAX_MESSAGES;
+
+  useEffect(() => {
+    if (isOverMessageThreshold && isPinnedToBottom) {
+      setMessages(messages.slice(0, MESSAGE_BUFFER_SIZE));
+    }
+  }, [isOverMessageThreshold, isPinnedToBottom, messages]);
+
   return (
-    <List
-      className="text-sm"
-      onScroll={({ clientHeight, scrollHeight, scrollTop }) => {
-        if (isPinnedToBottom) {
-          const isScrollingUpward = scrollTop < scrollTopRef.current;
-          const didHeightChange = scrollHeight !== scrollHeightRef.current;
-
-          if (isScrollingUpward && !didHeightChange) {
-            onIsPinnedToBottomChange(false);
+    <>
+      <ul
+        ref={listRef}
+        className="text-sm h-full overflow-auto flex flex-col-reverse"
+        onScroll={(ev) => {
+          if (ev.currentTarget.scrollTop !== 0 && isPinnedToBottom) {
+            setIsPinnedToBottom(false);
+          } else if (ev.currentTarget.scrollTop === 0 && !isPinnedToBottom) {
+            setIsPinnedToBottom(true);
           }
-        } else {
-          const didScrollToBottom =
-            scrollTop + clientHeight === scrollHeight || scrollHeight === 0;
-
-          if (didScrollToBottom) {
-            onIsPinnedToBottomChange(true);
-          }
-        }
-
-        scrollTopRef.current = scrollTop;
-        scrollHeightRef.current = scrollHeight;
-      }}
-      width={width}
-      height={height}
-      overscanRowCount={20}
-      rowCount={messages.length}
-      deferredMeasurementCache={cache}
-      rowHeight={cache.rowHeight}
-      rowRenderer={({ index, style, parent, isScrolling }) => {
-        const message = messages[index];
-
-        return (
-          <ChatRow
-            cache={cache}
-            index={index}
-            key={message.id}
-            message={message}
-            parent={parent}
-            style={style}
-            isScrolling={isScrolling}
-          />
-        );
-      }}
-      scrollToIndex={isPinnedToBottom ? messages.length - 1 : undefined}
-    />
+        }}
+      >
+        {messages.map((message) => (
+          <ChatRow key={message.id} message={message} />
+        ))}
+      </ul>
+      <div className="absolute bottom-0 left-0 right-0 py-4 flex justify-center">
+        {!isPinnedToBottom ? (
+          <button
+            className="
+              px-4 py-2 rounded-full bg-neutral-900 text-slate-300
+              shadow-lg cursor-pointer
+              flex gap-2 items-center justify-center
+            "
+            onClick={() => {
+              setIsPinnedToBottom(true);
+              listRef.current?.scrollTo(0, 0);
+            }}
+          >
+            <ArrowDown size={14} weight="bold" />
+            Live Chat
+          </button>
+        ) : null}
+      </div>
+    </>
   );
-});
+};

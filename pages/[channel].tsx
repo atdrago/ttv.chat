@@ -2,7 +2,7 @@ import { getCookie } from "cookies-next";
 import type { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
 
-import { ChatMessages } from "components/ChatMessages";
+import { ChatList } from "components/ChatList";
 import { Header } from "components/Header";
 import { TwitchUser } from "types";
 
@@ -62,7 +62,7 @@ const ChannelPage: NextPage<ChannelPageProps> = ({ channelUser }) => {
       style={{ gridTemplateRows: "min-content minmax(0, 1fr)" }}
     >
       <Header currentChannelUser={channelUser} />
-      <ChatMessages channelUser={channelUser} />
+      <ChatList channelUser={channelUser} />
     </div>
   );
 };

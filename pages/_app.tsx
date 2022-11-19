@@ -1,4 +1,3 @@
-import "react-virtualized/styles.css";
 import "styles/globals.css";
 
 import {
