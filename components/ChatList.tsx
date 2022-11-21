@@ -1,84 +1,44 @@
-import { usePathname } from "next/navigation";
-import { memo, useEffect, useRef, useState } from "react";
-import { CellMeasurerCache, List } from "react-virtualized";
-import { useDebounce } from "use-debounce";
+import { ArrowDown } from "phosphor-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ChatRow } from "components/ChatRow";
 import { useChatClient } from "hooks/useChatClient";
-import { useEmotes } from "hooks/useEmotes";
 import { isWebUrl } from "lib/isWebUrl";
-import type { Message, TwitchUser } from "types";
+import type { BttvEmote, Message, SevenTvEmote, TwitchUser } from "types";
 
 interface ChatListProps {
   channelUser?: TwitchUser;
-  height: number;
-  width: number;
   isPinnedToBottom?: boolean;
   onIsPinnedToBottomChange?: (isPinnedToBottom: boolean) => void;
+  bttvChannelEmotes: Record<string, Record<string, BttvEmote>>;
+  sevenTvChannelEmotes: Record<string, Record<string, SevenTvEmote>>;
 }
 const emojiRegexp = /(\p{EPres}|\p{ExtPict})(\u200d(\p{EPres}|\p{ExtPict}))/gu;
+const MAX_MESSAGES = 500;
+const MESSAGE_BUFFER_SIZE = 100;
 
-// const MAX_MESSAGES = 100;
-// const MESSAGE_BUFFER_SIZE = 50;
-
-export const ChatList = memo(function ChatListMemo({
+export const ChatList = ({
   channelUser,
-  width,
-  height,
-  isPinnedToBottom,
-  onIsPinnedToBottomChange = () => null,
-}: ChatListProps) {
-  const scrollTopRef = useRef(0);
-  const scrollHeightRef = useRef(0);
-  const [cache] = useState<CellMeasurerCache>(
-    () =>
-      new CellMeasurerCache({
-        fixedWidth: true,
-        defaultHeight: 32,
-      })
-  );
+  bttvChannelEmotes,
+  sevenTvChannelEmotes,
+}: ChatListProps) => {
   const chatClient = useChatClient(channelUser?.login);
-  const { bttvChannelEmotes, sevenTvChannelEmotes } = useEmotes(channelUser);
+
   const [messages, setMessages] = useState<Message[]>([]);
-  const pathname = usePathname();
-  const [windowWidth, setWindowWidth] = useState(0);
-  const [windowWidthDebounced] = useDebounce(windowWidth, 250);
+  const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
 
-  useEffect(() => {
-    setMessages([]);
-  }, [channelUser]);
+  const listRef = useRef<HTMLUListElement>(null);
+  const prevScrollTopRef = useRef(0);
+  const movingUpCountRef = useRef(0);
+  const movingDownCountRef = useRef(0);
 
-  useEffect(() => {
-    cache.clearAll();
-    onIsPinnedToBottomChange(true);
-  }, [cache, onIsPinnedToBottomChange, pathname, windowWidthDebounced]);
+  // Make sure messages get cleared if the channelUser changes and the component
+  // doesn't get unmounted
+  useEffect(() => setMessages([]), [channelUser]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // const isOverMessageThreshold = messages.length > MAX_MESSAGES;
-
-  // useEffect(() => {
-  //   if (isOverMessageThreshold && isPinnedToBottom) {
-  //     setMessages(messages.slice(messages.length - MESSAGE_BUFFER_SIZE));
-  //     cache.clearAll();
-  //     onIsPinnedToBottomChange(true);
-  //   }
-  // }, [
-  //   cache,
-  //   isOverMessageThreshold,
-  //   isPinnedToBottom,
-  //   messages,
-  //   onIsPinnedToBottomChange,
-  // ]);
-
+  // Handles adding new messages and replacing emote tokens with emote images,
+  // changing URLs into links, increasing emoji font size, and making usernames
+  // bold
   useEffect(() => {
     const messageHandler = chatClient?.onMessage(
       (_channel, _user, _text, msg) => {
@@ -174,19 +134,16 @@ export const ChatList = memo(function ChatListMemo({
 
         const { id, target } = msg;
         const { color, displayName } = msg.userInfo;
+        const channelUserName = target.value.slice(1);
+        const message = {
+          channelUserName,
+          color,
+          displayName,
+          html,
+          id,
+        };
 
-        setMessages((prevMessages) => {
-          return [
-            ...prevMessages,
-            {
-              id,
-              color,
-              displayName,
-              html,
-              channelUserName: target.value.slice(1),
-            },
-          ];
-        });
+        setMessages((prevMessages) => prevMessages.concat([message]));
       }
     );
 
@@ -197,51 +154,118 @@ export const ChatList = memo(function ChatListMemo({
     };
   }, [bttvChannelEmotes, chatClient, channelUser, sevenTvChannelEmotes]);
 
+  const isOverMessageThreshold = messages.length > MAX_MESSAGES;
+
+  // Handles removing old messages
+  useEffect(() => {
+    if (isOverMessageThreshold && isPinnedToBottom) {
+      setMessages((prevMessages) =>
+        prevMessages.slice(prevMessages.length - MESSAGE_BUFFER_SIZE)
+      );
+    }
+  }, [isOverMessageThreshold, isPinnedToBottom, messages]);
+
+  // Scroll the newest messages into view when:
+  // - messages change
+  // - the user "pins" the chat
+  useEffect(() => {
+    if (listRef.current && isPinnedToBottom) {
+      listRef.current.scrollTop =
+        listRef.current.scrollHeight - listRef.current.clientHeight;
+    }
+  }, [isPinnedToBottom, messages]);
+
+  const handleScroll = useCallback(() => {
+    if (listRef.current) {
+      const isMovingDown = listRef.current.scrollTop > prevScrollTopRef.current;
+      const isMovingUp = listRef.current.scrollTop < prevScrollTopRef.current;
+      // const isAtBottom =
+      //   listRef.current.scrollTop ===
+      //   listRef.current.scrollHeight - listRef.current.clientHeight;
+      const isNearBottom =
+        listRef.current.scrollTop >=
+        listRef.current.scrollHeight - listRef.current.clientHeight - 2;
+
+      if (
+        isMovingDown &&
+        isNearBottom &&
+        !isPinnedToBottom &&
+        movingUpCountRef.current === 0 &&
+        movingDownCountRef.current > 2
+      ) {
+        setIsPinnedToBottom(true);
+      } else if (
+        isMovingUp &&
+        isPinnedToBottom &&
+        movingDownCountRef.current === 0 &&
+        movingUpCountRef.current > 2
+      ) {
+        setIsPinnedToBottom(false);
+      }
+
+      if (isMovingDown) {
+        movingDownCountRef.current += 1;
+      } else {
+        movingDownCountRef.current = 0;
+      }
+
+      if (isMovingUp) {
+        movingUpCountRef.current += 1;
+      } else {
+        movingUpCountRef.current = 0;
+      }
+
+      prevScrollTopRef.current = listRef.current.scrollTop;
+    }
+  }, [isPinnedToBottom]);
+
+  const isAtStreamerRegExp = new RegExp(`@${channelUser?.login}`, "i");
+
   return (
-    <List
-      className="text-sm"
-      onScroll={({ clientHeight, scrollHeight, scrollTop }) => {
-        if (isPinnedToBottom) {
-          const isScrollingUpward = scrollTop < scrollTopRef.current;
-          const didHeightChange = scrollHeight !== scrollHeightRef.current;
-
-          if (isScrollingUpward && !didHeightChange) {
-            onIsPinnedToBottomChange(false);
+    <>
+      <ul
+        ref={listRef}
+        className="
+          h-full flex flex-col gap-0.5 text-sm
+          overflow-y-scroll overflow-x-hidden
+          transform-gpu
+        "
+        onScroll={handleScroll}
+        // When a mobile user starts touching the scrolling chat, this is an
+        // immediate indication that we should "unpin" it from the bottom
+        onTouchStartCapture={() => setIsPinnedToBottom(false)}
+        onLoadCapture={() => {
+          if (listRef.current && isPinnedToBottom) {
+            listRef.current.scrollTop =
+              listRef.current.scrollHeight - listRef.current.clientHeight;
           }
-        } else {
-          const didScrollToBottom =
-            scrollTop + clientHeight === scrollHeight || scrollHeight === 0;
-
-          if (didScrollToBottom) {
-            onIsPinnedToBottomChange(true);
-          }
-        }
-
-        scrollTopRef.current = scrollTop;
-        scrollHeightRef.current = scrollHeight;
-      }}
-      width={width}
-      height={height}
-      overscanRowCount={20}
-      rowCount={messages.length}
-      deferredMeasurementCache={cache}
-      rowHeight={cache.rowHeight}
-      rowRenderer={({ index, style, parent, isScrolling }) => {
-        const message = messages[index];
-
-        return (
+        }}
+      >
+        {messages.map((message) => (
           <ChatRow
-            cache={cache}
-            index={index}
+            highlight={isAtStreamerRegExp.test(message.html)}
             key={message.id}
             message={message}
-            parent={parent}
-            style={style}
-            isScrolling={isScrolling}
           />
-        );
-      }}
-      scrollToIndex={isPinnedToBottom ? messages.length - 1 : undefined}
-    />
+        ))}
+      </ul>
+      <div className="absolute bottom-0 left-0 right-0 py-4 flex justify-center">
+        {!isPinnedToBottom ? (
+          <button
+            className="
+              px-4 py-2 rounded-full bg-neutral-900 text-slate-300
+              shadow-lg cursor-pointer
+              flex gap-2 items-center justify-center
+            "
+            onClick={() => {
+              setIsPinnedToBottom(true);
+            }}
+          >
+            <ArrowDown size={14} weight="bold" />
+            Live Chat
+          </button>
+        ) : null}
+      </div>
+    </>
   );
-});
+};
