@@ -4,7 +4,6 @@ import { useCurrentUser } from "hooks/useCurrentUser";
 import { fetchWithAuth } from "lib/client/fetchWithAuth";
 import { getTwitchFollowedChannels } from "lib/client/getTwitchFollowedChannels";
 import { getTwitchUsers } from "lib/client/getTwitchUsers";
-import { TwitchChannel } from "types";
 
 export const useSidebarChannelUsers = () => {
   // 1. Get the current user

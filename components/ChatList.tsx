@@ -1,5 +1,5 @@
 import { ArrowDown } from "phosphor-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ChatRow } from "components/ChatRow";
 import { useChatClient } from "hooks/useChatClient";
@@ -14,8 +14,8 @@ interface ChatListProps {
   sevenTvChannelEmotes: Record<string, Record<string, SevenTvEmote>>;
 }
 const emojiRegexp = /(\p{EPres}|\p{ExtPict})(\u200d(\p{EPres}|\p{ExtPict}))/gu;
-const MAX_MESSAGES = 300;
-const MESSAGE_BUFFER_SIZE = 200;
+const MAX_MESSAGES = 500;
+const MESSAGE_BUFFER_SIZE = 100;
 
 export const ChatList = ({
   channelUser,
@@ -27,10 +27,18 @@ export const ChatList = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
 
-  useEffect(() => {
-    setMessages([]);
-  }, [channelUser]);
+  const listRef = useRef<HTMLUListElement>(null);
+  const prevScrollTopRef = useRef(0);
+  const movingUpCountRef = useRef(0);
+  const movingDownCountRef = useRef(0);
 
+  // Make sure messages get cleared if the channelUser changes and the component
+  // doesn't get unmounted
+  useEffect(() => setMessages([]), [channelUser]);
+
+  // Handles adding new messages and replacing emote tokens with emote images,
+  // changing URLs into links, increasing emoji font size, and making usernames
+  // bold
   useEffect(() => {
     const messageHandler = chatClient?.onMessage(
       (_channel, _user, _text, msg) => {
@@ -126,21 +134,16 @@ export const ChatList = ({
 
         const { id, target } = msg;
         const { color, displayName } = msg.userInfo;
+        const channelUserName = target.value.slice(1);
+        const message = {
+          channelUserName,
+          color,
+          displayName,
+          html,
+          id,
+        };
 
-        setMessages((prevMessages) => {
-          // New messages get prepended to the messages array because messages
-          // are displayed using flex-direction: column-reverse;
-          return [
-            {
-              id,
-              color,
-              displayName,
-              html,
-              channelUserName: target.value.slice(1),
-            },
-            ...prevMessages,
-          ];
-        });
+        setMessages((prevMessages) => prevMessages.concat([message]));
       }
     );
 
@@ -153,22 +156,88 @@ export const ChatList = ({
 
   const isOverMessageThreshold = messages.length > MAX_MESSAGES;
 
+  // Handles removing old messages
   useEffect(() => {
     if (isOverMessageThreshold && isPinnedToBottom) {
-      setMessages(messages.slice(0, MESSAGE_BUFFER_SIZE));
+      setMessages((prevMessages) =>
+        prevMessages.slice(prevMessages.length - MESSAGE_BUFFER_SIZE)
+      );
     }
   }, [isOverMessageThreshold, isPinnedToBottom, messages]);
+
+  // Scroll the newest messages into view when:
+  // - messages change
+  // - the user "pins" the chat
+  useEffect(() => {
+    if (listRef.current && isPinnedToBottom) {
+      listRef.current.scrollTop =
+        listRef.current.scrollHeight - listRef.current.clientHeight;
+    }
+  }, [isPinnedToBottom, messages]);
+
+  const handleScroll = useCallback(() => {
+    if (listRef.current) {
+      const isMovingDown = listRef.current.scrollTop > prevScrollTopRef.current;
+      const isMovingUp = listRef.current.scrollTop < prevScrollTopRef.current;
+      // const isAtBottom =
+      //   listRef.current.scrollTop ===
+      //   listRef.current.scrollHeight - listRef.current.clientHeight;
+      const isNearBottom =
+        listRef.current.scrollTop >=
+        listRef.current.scrollHeight - listRef.current.clientHeight - 2;
+
+      if (
+        isMovingDown &&
+        isNearBottom &&
+        !isPinnedToBottom &&
+        movingUpCountRef.current === 0 &&
+        movingDownCountRef.current > 2
+      ) {
+        setIsPinnedToBottom(true);
+      } else if (
+        isMovingUp &&
+        isPinnedToBottom &&
+        movingDownCountRef.current === 0 &&
+        movingUpCountRef.current > 2
+      ) {
+        setIsPinnedToBottom(false);
+      }
+
+      if (isMovingDown) {
+        movingDownCountRef.current += 1;
+      } else {
+        movingDownCountRef.current = 0;
+      }
+
+      if (isMovingUp) {
+        movingUpCountRef.current += 1;
+      } else {
+        movingUpCountRef.current = 0;
+      }
+
+      prevScrollTopRef.current = listRef.current.scrollTop;
+    }
+  }, [isPinnedToBottom]);
+
+  const isAtStreamerRegExp = new RegExp(`@${channelUser?.login}`, "i");
 
   return (
     <>
       <ul
         ref={listRef}
-        className="text-sm h-full overflow-auto flex flex-col-reverse"
-        onScroll={(ev) => {
-          if (ev.currentTarget.scrollTop !== 0 && isPinnedToBottom) {
-            setIsPinnedToBottom(false);
-          } else if (ev.currentTarget.scrollTop === 0 && !isPinnedToBottom) {
-            setIsPinnedToBottom(true);
+        className="
+          h-full flex flex-col gap-0.5 text-sm
+          overflow-y-scroll overflow-x-hidden
+          transform-gpu
+        "
+        onScroll={handleScroll}
+        // When a mobile user starts touching the scrolling chat, this is an
+        // immediate indication that we should "unpin" it from the bottom
+        onTouchStartCapture={() => setIsPinnedToBottom(false)}
+        onLoadCapture={() => {
+          if (listRef.current && isPinnedToBottom) {
+            listRef.current.scrollTop =
+              listRef.current.scrollHeight - listRef.current.clientHeight;
           }
         }}
       >
@@ -190,7 +259,6 @@ export const ChatList = ({
             "
             onClick={() => {
               setIsPinnedToBottom(true);
-              listRef.current?.scrollTo(0, 0);
             }}
           >
             <ArrowDown size={14} weight="bold" />

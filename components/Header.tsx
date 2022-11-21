@@ -30,7 +30,7 @@ export const Header = ({ currentChannelUser }: HeaderProps) => {
   return (
     <div
       className="
-        p-3
+        p-2
         bg-neutral-200 text-slate-900 dark:bg-neutral-900 dark:text-slate-300
         border-b border-slate-400 dark:border-slate-900
         flex gap-3 items-center justify-between
