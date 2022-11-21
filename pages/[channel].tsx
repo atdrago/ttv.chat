@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 
 import { ChatList } from "components/ChatList";
 import { Header } from "components/Header";
+import { useEmotes } from "hooks/useEmotes";
 import { TwitchUser } from "types";
 
 interface ChannelPageProps {
@@ -51,6 +52,10 @@ const ChannelPage: NextPage<ChannelPageProps> = ({ channelUser }) => {
   const router = useRouter();
   const { channel } = router.query;
   const isChannelValid = typeof channel === "string";
+  // Keep `useEmotes` as high in the chain as possible. It takes around 30ms to
+  // complete, so putting it lower in the tree means it reruns every time the
+  // child component runs
+  const { bttvChannelEmotes, sevenTvChannelEmotes } = useEmotes(channelUser);
 
   if (!isChannelValid || !channelUser) {
     return null;
@@ -62,7 +67,11 @@ const ChannelPage: NextPage<ChannelPageProps> = ({ channelUser }) => {
       style={{ gridTemplateRows: "min-content minmax(0, 1fr)" }}
     >
       <Header currentChannelUser={channelUser} />
-      <ChatList channelUser={channelUser} />
+      <ChatList
+        bttvChannelEmotes={bttvChannelEmotes}
+        sevenTvChannelEmotes={sevenTvChannelEmotes}
+        channelUser={channelUser}
+      />
     </div>
   );
 };

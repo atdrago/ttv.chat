@@ -3,23 +3,27 @@ import { useEffect, useRef, useState } from "react";
 
 import { ChatRow } from "components/ChatRow";
 import { useChatClient } from "hooks/useChatClient";
-import { useEmotes } from "hooks/useEmotes";
 import { isWebUrl } from "lib/isWebUrl";
-import type { Message, TwitchUser } from "types";
+import type { BttvEmote, Message, SevenTvEmote, TwitchUser } from "types";
 
 interface ChatListProps {
   channelUser?: TwitchUser;
   isPinnedToBottom?: boolean;
   onIsPinnedToBottomChange?: (isPinnedToBottom: boolean) => void;
+  bttvChannelEmotes: Record<string, Record<string, BttvEmote>>;
+  sevenTvChannelEmotes: Record<string, Record<string, SevenTvEmote>>;
 }
 const emojiRegexp = /(\p{EPres}|\p{ExtPict})(\u200d(\p{EPres}|\p{ExtPict}))/gu;
 const MAX_MESSAGES = 300;
 const MESSAGE_BUFFER_SIZE = 200;
 
-export const ChatList = ({ channelUser }: ChatListProps) => {
-  const listRef = useRef<HTMLUListElement>(null);
+export const ChatList = ({
+  channelUser,
+  bttvChannelEmotes,
+  sevenTvChannelEmotes,
+}: ChatListProps) => {
   const chatClient = useChatClient(channelUser?.login);
-  const { bttvChannelEmotes, sevenTvChannelEmotes } = useEmotes(channelUser);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
 
