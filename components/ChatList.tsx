@@ -249,7 +249,18 @@ export const ChatList = ({
           />
         ))}
       </ul>
-      <div className="absolute bottom-0 left-0 right-0 py-4 flex justify-center">
+      <div className="absolute bottom-0 left-0 right-0 pb-4 flex justify-center">
+        {process.env.NODE_ENV === "development" ? (
+          <span
+            className="
+            px-4 py-2 rounded-full bg-neutral-900 text-slate-300
+            shadow-lg cursor-pointer
+            flex gap-2 items-center justify-center
+          "
+          >
+            {messages.length}
+          </span>
+        ) : null}
         {!isPinnedToBottom ? (
           <button
             className="
