@@ -173,7 +173,11 @@ export const ChatList = ({
         }}
       >
         {messages.map((message) => (
-          <ChatRow key={message.id} message={message} />
+          <ChatRow
+            highlight={isAtStreamerRegExp.test(message.html)}
+            key={message.id}
+            message={message}
+          />
         ))}
       </ul>
       <div className="absolute bottom-0 left-0 right-0 py-4 flex justify-center">
