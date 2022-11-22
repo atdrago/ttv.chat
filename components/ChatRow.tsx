@@ -20,8 +20,8 @@ export const ChatRow = memo(
         className={classNames(
           "px-2 py-1 align-sub break-words transform-gpu content-visibility-auto",
           {
-            "bg-slate-200": colorScheme === "light" && highlight,
-            "bg-slate-700": colorScheme === "dark" && highlight,
+            "bg-neutral-200": colorScheme === "light" && highlight,
+            "bg-neutral-700": colorScheme === "dark" && highlight,
           }
         )}
       >
@@ -36,11 +36,11 @@ export const ChatRow = memo(
                   color,
                   colorScheme === "dark"
                     ? highlight
-                      ? "#334155"
-                      : "#1e293b"
+                      ? "#404040"
+                      : "#262626"
                     : highlight
-                    ? "#e2e8f0"
-                    : "#f1f5f9"
+                    ? "#e5e5e5"
+                    : "#f5f5f5"
                 )
               : undefined,
           }}

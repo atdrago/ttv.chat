@@ -108,7 +108,7 @@ const ChannelPage: NextPage<ChannelPageProps> = ({ badges, channelUser }) => {
       className="
         h-full w-full max-w-full max-h-full
         grid overflow-hidden
-        bg-slate-100 dark:bg-slate-800
+        bg-neutral-100 dark:bg-neutral-800
         relative
       "
       style={{ gridTemplateRows: "min-content minmax(0, 1fr)" }}

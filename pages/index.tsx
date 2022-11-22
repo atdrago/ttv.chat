@@ -11,7 +11,7 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 const HomePage: NextPage = () => {
   return (
     <div
-      className="h-full w-full max-w-full max-h-full grid overflow-hidden bg-slate-100 dark:bg-slate-800"
+      className="h-full w-full max-w-full max-h-full grid overflow-hidden bg-neutral-100 dark:bg-neutral-800"
       style={{ gridTemplateRows: "min-content minmax(0, 1fr)" }}
     >
       <Header />

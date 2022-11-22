@@ -19,8 +19,8 @@ export const Sidebar = () => {
   return (
     <nav
       className="
-        bg-neutral-200 dark:bg-neutral-900 z-1 p-2 pt-5 h-full overflow-auto flex-shrink-0
-        border-r border-neutral-400 dark:border-neutral-700 shadow-md shadow-neutral-900
+        bg-neutral-300 dark:bg-neutral-900 z-1 p-2 pt-5
+        h-full overflow-auto flex-shrink-0
       "
     >
       <ul className="flex flex-col gap-1 w-9">

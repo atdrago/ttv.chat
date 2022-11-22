@@ -313,7 +313,9 @@ export const ChatList = ({
         {process.env.NODE_ENV === "development" ? (
           <span
             className="
-            px-4 py-2 rounded-full bg-neutral-900 text-slate-300
+            px-4 py-2 rounded-full
+            bg-neutral-300 text-neutral-900
+            dark:bg-neutral-900 dark:text-neutral-300
             shadow-lg cursor-pointer
             flex gap-2 items-center justify-center
           "
@@ -324,7 +326,9 @@ export const ChatList = ({
         {!isPinnedToBottom ? (
           <button
             className="
-              px-4 py-2 rounded-full bg-neutral-900 text-slate-300
+              px-4 py-2 rounded-full
+              bg-neutral-300 text-neutral-900
+              dark:bg-neutral-900 dark:text-neutral-300
               shadow-lg cursor-pointer
               flex gap-2 items-center justify-center
             "

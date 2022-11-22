@@ -8,8 +8,8 @@ export const Layout = ({ children }: React.PropsWithChildren) => {
     <div
       className="
         h-full w-full grid
-        bg-neutral-300 text-slate-800
-        dark:bg-neutral-900 dark:text-slate-300
+        bg-neutral-300 text-neutral-900
+        dark:bg-neutral-900 dark:text-neutral-300
       "
       style={{
         gridTemplateColumns: isVisible
