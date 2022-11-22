@@ -25,10 +25,12 @@ export const ChatRow = memo(
           }
         )}
       >
-        <span
-          className="inline-flex gap-1 pr-1 align-sub"
-          dangerouslySetInnerHTML={{ __html: badgeHtml }}
-        />
+        {badgeHtml ? (
+          <span
+            className="inline-flex gap-1 pr-1 align-sub"
+            dangerouslySetInnerHTML={{ __html: badgeHtml }}
+          />
+        ) : null}
         <b
           style={{
             color: color
