@@ -47,6 +47,7 @@ export const useSidebarChannelUsers = () => {
       );
     },
     {
+      enabled: !currentUser?.id,
       retry: false,
       refetchOnMount: false,
       refetchOnReconnect: false,
@@ -74,7 +75,7 @@ export const useSidebarChannelUsers = () => {
       );
     },
     {
-      // enabled: followedChannelsUserNames.length > 0,
+      enabled: followedOrTopChannelUserNames.length > 0,
       retry: false,
       refetchOnMount: false,
       refetchOnReconnect: false,
