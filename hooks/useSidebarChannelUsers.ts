@@ -21,10 +21,6 @@ export const useSidebarChannelUsers = () => {
     },
     {
       enabled: !!currentUser?.id,
-      retry: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
       refetchInterval: 5 * 60000, // every 5 minutes
     }
   );
@@ -48,10 +44,6 @@ export const useSidebarChannelUsers = () => {
     },
     {
       enabled: !currentUser?.id,
-      retry: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
       refetchInterval: 5 * 60000, // every 5 minutes
     }
   );
@@ -76,10 +68,6 @@ export const useSidebarChannelUsers = () => {
     },
     {
       enabled: followedOrTopChannelUserNames.length > 0,
-      retry: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
     }
   );
 
