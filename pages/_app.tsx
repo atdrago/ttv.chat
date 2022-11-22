@@ -10,8 +10,9 @@ import App from "next/app";
 import type { AppContext, AppInitialProps, AppProps } from "next/app";
 import { useState } from "react";
 
-import { Sidebar } from "components/Sidebar";
+import { Layout } from "components/Layout";
 import { CookiesProvider } from "hooks/useCookiesContext";
+import { SidebarVisibleProvider } from "hooks/useSidebarVisibleContext";
 import { getTwitchAppAccessToken } from "lib/server/getTwitchAppAccessToken";
 import { getTwitchUserAccessToken } from "lib/server/getTwitchUserAccessToken";
 
@@ -241,23 +242,15 @@ function MyApp({ Component, pageProps }: AppProps<PageProps>) {
 
   return (
     <CookiesProvider value={cookies}>
-      <QueryClientProvider client={queryClient}>
-        <Hydrate state={pageProps.dehydratedState}>
-          <div
-            className="
-              h-full w-full grid
-              bg-neutral-300 text-slate-800
-              dark:bg-neutral-900 dark:text-slate-300
-            "
-            style={{
-              gridTemplateColumns: "min-content minmax(0, 1fr)",
-            }}
-          >
-            <Sidebar />
-            <Component {...pageProps} />
-          </div>
-        </Hydrate>
-      </QueryClientProvider>
+      <SidebarVisibleProvider>
+        <QueryClientProvider client={queryClient}>
+          <Hydrate state={pageProps.dehydratedState}>
+            <Layout>
+              <Component {...pageProps} />
+            </Layout>
+          </Hydrate>
+        </QueryClientProvider>
+      </SidebarVisibleProvider>
     </CookiesProvider>
   );
 }

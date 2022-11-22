@@ -4,6 +4,7 @@ import { TwitchLogo, User, UserList } from "phosphor-react";
 import { useMemo } from "react";
 
 import { useCookies } from "hooks/useCookiesContext";
+import { useSidebarVisibleContext } from "hooks/useSidebarVisibleContext";
 import { TwitchUser } from "types";
 
 interface HeaderProps {
@@ -11,6 +12,7 @@ interface HeaderProps {
 }
 
 export const Header = ({ currentChannelUser }: HeaderProps) => {
+  const { setIsVisible, isVisible } = useSidebarVisibleContext();
   const { cookies, deleteCookie, setCookie } = useCookies();
   const pathname = usePathname();
 
@@ -27,6 +29,8 @@ export const Header = ({ currentChannelUser }: HeaderProps) => {
     []
   );
 
+  const isLoggedIn = !!cookies["user-access-token"];
+
   return (
     <div
       className="
@@ -39,7 +43,17 @@ export const Header = ({ currentChannelUser }: HeaderProps) => {
     >
       {currentChannelUser ? (
         <h1 className="flex gap-3 items-center">
-          <UserList size={28} />
+          <button
+            title={`${isVisible ? "Hide" : "Show"} ${
+              isLoggedIn ? "followed" : "top"
+            } channels`}
+            aria-label={`${isVisible ? "Hide" : "Show"} ${
+              isLoggedIn ? "followed" : "top"
+            } channels`}
+            onClick={() => setIsVisible((prevIsVisible) => !prevIsVisible)}
+          >
+            <UserList size={28} weight={isVisible ? "fill" : "regular"} />
+          </button>
           {typeof currentChannelUser.profile_image_url === "string" ? (
             <Image
               alt=""
@@ -66,7 +80,7 @@ export const Header = ({ currentChannelUser }: HeaderProps) => {
           <span className="font-bold text-lg">{currentChannelUser.login}</span>
         </h1>
       ) : null}
-      {!cookies["user-access-token"] ? (
+      {!isLoggedIn ? (
         <a
           className="
             text-md rounded bg-violet-600 flex items-center justify-center

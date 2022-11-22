@@ -4,11 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { useSidebarChannelUsers } from "hooks/useSidebarChannelUsers";
+import { useSidebarVisibleContext } from "hooks/useSidebarVisibleContext";
 
 export const Sidebar = () => {
+  const { isVisible } = useSidebarVisibleContext();
   const sidebarChannelUsers = useSidebarChannelUsers();
   const pathname = usePathname();
   const currentChannel = pathname?.slice(1) ?? undefined;
+
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <nav
