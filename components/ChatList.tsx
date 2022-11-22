@@ -4,9 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatRow } from "components/ChatRow";
 import { useChatClient } from "hooks/useChatClient";
 import { isWebUrl } from "lib/isWebUrl";
-import type { BttvEmote, Message, SevenTvEmote, TwitchUser } from "types";
+import type {
+  BttvEmote,
+  Message,
+  SevenTvEmote,
+  TwitchBadge,
+  TwitchUser,
+} from "types";
 
 interface ChatListProps {
+  badges?: TwitchBadge[];
   channelUser?: TwitchUser;
   isPinnedToBottom?: boolean;
   onIsPinnedToBottomChange?: (isPinnedToBottom: boolean) => void;
@@ -18,6 +25,7 @@ const MAX_MESSAGES = 500;
 const MESSAGE_BUFFER_SIZE = 100;
 
 export const ChatList = ({
+  badges,
   channelUser,
   bttvChannelEmotes,
   sevenTvChannelEmotes,
@@ -132,10 +140,33 @@ export const ChatList = ({
           }
         }, "");
 
+        const badgeHtml = Array.from(msg.userInfo.badges.entries())
+          .map(([badgeCategory, badgeDetail]) => {
+            const badgeSet = badges?.find(
+              ({ set_id }) => set_id === badgeCategory
+            );
+
+            const badge = badgeSet?.versions.find(
+              ({ id }) => id === badgeDetail
+            );
+
+            return `
+              <img
+                title="${badgeCategory}"
+                class="inline"
+                src="${badge?.image_url_1x}"
+                width="18"
+                height="18"
+              />
+            `;
+          })
+          .join("");
+
         const { id, target } = msg;
         const { color, displayName } = msg.userInfo;
         const channelUserName = target.value.slice(1);
-        const message = {
+        const message: Message = {
+          badgeHtml,
           channelUserName,
           color,
           displayName,
@@ -152,7 +183,13 @@ export const ChatList = ({
         chatClient.removeListener(messageHandler);
       }
     };
-  }, [bttvChannelEmotes, chatClient, channelUser, sevenTvChannelEmotes]);
+  }, [
+    badges,
+    bttvChannelEmotes,
+    channelUser,
+    chatClient,
+    sevenTvChannelEmotes,
+  ]);
 
   const isOverMessageThreshold = messages.length > MAX_MESSAGES;
 

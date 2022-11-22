@@ -12,7 +12,7 @@ interface ChatRowProps {
 
 export const ChatRow = memo(
   function ChatRowComponent({ highlight, message }: ChatRowProps) {
-    const { html, color, displayName } = message;
+    const { badgeHtml, html, color, displayName } = message;
     const colorScheme = useColorScheme();
 
     return (
@@ -25,6 +25,10 @@ export const ChatRow = memo(
           }
         )}
       >
+        <span
+          className="inline-flex gap-1 pr-1 align-sub"
+          dangerouslySetInnerHTML={{ __html: badgeHtml }}
+        />
         <b
           style={{
             color: color

@@ -4,4 +4,5 @@ export interface Message {
   displayName: string;
   color: string | undefined;
   html: string;
+  badgeHtml: string;
 }

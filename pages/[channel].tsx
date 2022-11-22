@@ -5,9 +5,10 @@ import { useRouter } from "next/router";
 import { ChatList } from "components/ChatList";
 import { Header } from "components/Header";
 import { useEmotes } from "hooks/useEmotes";
-import { TwitchUser } from "types";
+import { TwitchBadge, TwitchUser } from "types";
 
 interface ChannelPageProps {
+  badges?: TwitchBadge[];
   channelUser?: TwitchUser;
 }
 
@@ -34,12 +35,53 @@ export const getServerSideProps: GetServerSideProps<
       }
     );
 
-    const usersResponseJson = await usersResponse.json();
+    const usersResponseJson = (await usersResponse.json()) as {
+      data: TwitchUser[];
+    };
+
+    const channelUser = usersResponseJson.data[0];
+
+    const channelBadgesResponse = await fetch(
+      `https://api.twitch.tv/helix/chat/badges?${new URLSearchParams({
+        broadcaster_id: channelUser?.id ?? "",
+      })}`,
+      {
+        headers: {
+          Authorization: `Bearer ${appAccessToken}`,
+          "Content-Type": "application/json",
+          "Client-Id": process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID,
+        },
+        method: "GET",
+      }
+    );
+
+    const channelBadgesResponseJson = (await channelBadgesResponse.json()) as {
+      data: TwitchBadge[];
+    };
+
+    const globalBadgesResponse = await fetch(
+      `https://api.twitch.tv/helix/chat/badges/global`,
+      {
+        headers: {
+          Authorization: `Bearer ${appAccessToken}`,
+          "Content-Type": "application/json",
+          "Client-Id": process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID,
+        },
+        method: "GET",
+      }
+    );
+
+    const globalBadgesResponseJson = (await globalBadgesResponse.json()) as {
+      data: TwitchBadge[];
+    };
+
+    const badges = [
+      ...channelBadgesResponseJson.data,
+      ...globalBadgesResponseJson.data,
+    ];
 
     return {
-      props: {
-        channelUser: usersResponseJson.data[0],
-      },
+      props: { badges, channelUser },
     };
   }
 
@@ -48,7 +90,7 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-const ChannelPage: NextPage<ChannelPageProps> = ({ channelUser }) => {
+const ChannelPage: NextPage<ChannelPageProps> = ({ badges, channelUser }) => {
   const router = useRouter();
   const { channel } = router.query;
   const isChannelValid = typeof channel === "string";
@@ -73,9 +115,10 @@ const ChannelPage: NextPage<ChannelPageProps> = ({ channelUser }) => {
     >
       <Header currentChannelUser={channelUser} />
       <ChatList
+        badges={badges}
         bttvChannelEmotes={bttvChannelEmotes}
-        sevenTvChannelEmotes={sevenTvChannelEmotes}
         channelUser={channelUser}
+        sevenTvChannelEmotes={sevenTvChannelEmotes}
       />
     </div>
   );
