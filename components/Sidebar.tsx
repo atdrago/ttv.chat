@@ -21,7 +21,11 @@ export const Sidebar = () => {
         {sidebarChannelUsers?.map(
           ({ display_name, login, profile_image_url }) => (
             <li key={login}>
-              <Link className="cursor-pointer" href={`/${login}`}>
+              <Link
+                title={display_name}
+                className="cursor-pointer"
+                href={`/${login}`}
+              >
                 {profile_image_url ? (
                   <Image
                     alt={display_name ?? ""}
