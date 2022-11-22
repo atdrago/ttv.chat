@@ -30,56 +30,59 @@ export const Header = ({ currentChannelUser }: HeaderProps) => {
   );
 
   const isLoggedIn = !!cookies["user-access-token"];
+  const sidebarToggleLabel = `${isVisible ? "Hide" : "Show"} ${
+    isLoggedIn ? "followed" : "top"
+  } channels`;
 
   return (
     <div
       className="
         p-2
-        bg-neutral-200 text-slate-900 dark:bg-neutral-900 dark:text-slate-300
-        border-b border-slate-400 dark:border-slate-900
+        bg-neutral-300 text-neutral-900
+        dark:bg-neutral-900 dark:text-neutral-300
         flex gap-3 items-center justify-between
         overflow-x-auto overflow-y-hidden
       "
     >
-      {currentChannelUser ? (
-        <h1 className="flex gap-3 items-center">
-          <button
-            title={`${isVisible ? "Hide" : "Show"} ${
-              isLoggedIn ? "followed" : "top"
-            } channels`}
-            aria-label={`${isVisible ? "Hide" : "Show"} ${
-              isLoggedIn ? "followed" : "top"
-            } channels`}
-            onClick={() => setIsVisible((prevIsVisible) => !prevIsVisible)}
-          >
-            <UserList size={28} weight={isVisible ? "fill" : "regular"} />
-          </button>
-          {typeof currentChannelUser.profile_image_url === "string" ? (
-            <Image
-              alt=""
-              className="
+      <div className="flex gap-3 items-center justify-between">
+        <button
+          title={sidebarToggleLabel}
+          aria-label={sidebarToggleLabel}
+          onClick={() => setIsVisible((prevIsVisible) => !prevIsVisible)}
+        >
+          <UserList size={28} weight={isVisible ? "fill" : "regular"} />
+        </button>
+        {currentChannelUser ? (
+          <h1 className="flex gap-3 items-center">
+            {typeof currentChannelUser.profile_image_url === "string" ? (
+              <Image
+                alt=""
+                className="
                 h-10 w-10 text-lg leading-6
                 rounded-full border-2 border-solid border-emerald-500
                 p-0.5 flex-shrink-0
               "
-              height={40}
-              src={currentChannelUser.profile_image_url}
-              width={40}
-              priority={true}
-            />
-          ) : (
-            <User
-              size={40}
-              className="
+                height={40}
+                src={currentChannelUser.profile_image_url}
+                width={40}
+                priority={true}
+              />
+            ) : (
+              <User
+                size={40}
+                className="
                 h-10 w-10 text-lg leading-6
                 rounded-full border-2 border-solid border-emerald-500
                 p-0.5 flex-shrink-0
               "
-            />
-          )}
-          <span className="font-bold text-lg">{currentChannelUser.login}</span>
-        </h1>
-      ) : null}
+              />
+            )}
+            <span className="font-bold text-lg">
+              {currentChannelUser.login}
+            </span>
+          </h1>
+        ) : null}
+      </div>
       {!isLoggedIn ? (
         <a
           className="
