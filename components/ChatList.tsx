@@ -309,7 +309,12 @@ export const ChatList = ({
           />
         ))}
       </ul>
-      <div className="absolute bottom-0 left-0 right-0 pb-4 flex justify-center">
+      <div
+        className="
+          absolute bottom-0 left-0 right-0 pb-4 flex justify-center
+          pointer-events-none
+        "
+      >
         {process.env.NODE_ENV === "development" ? (
           <span
             className="
@@ -331,6 +336,7 @@ export const ChatList = ({
               dark:bg-neutral-900 dark:text-neutral-300
               shadow-lg cursor-pointer
               flex gap-2 items-center justify-center
+              pointer-events-auto
             "
             onClick={() => {
               setIsPinnedToBottom(true);
