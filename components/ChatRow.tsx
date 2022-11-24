@@ -1,24 +1,36 @@
-import allyColor from "a11ycolor";
 import classNames from "classnames";
 import { memo } from "react";
 
-import { useColorScheme } from "hooks/useColorScheme";
+import { accessibleColor } from "lib/client/accessibleColor";
 import type { Message } from "types";
 
 interface ChatRowProps {
   message: Message;
   highlight: boolean;
+  colorScheme: "dark" | "light";
 }
 
 export const ChatRow = memo(
-  function ChatRowComponent({ highlight, message }: ChatRowProps) {
+  function ChatRowComponent({ colorScheme, highlight, message }: ChatRowProps) {
     const { badgeHtml, html, color, displayName } = message;
-    const colorScheme = useColorScheme();
+
+    const backgroundColor =
+      colorScheme === "dark"
+        ? highlight
+          ? "#404040"
+          : "#262626"
+        : highlight
+        ? "#e5e5e5"
+        : "#f5f5f5";
+
+    const displayNameColor = color
+      ? accessibleColor(color, backgroundColor)
+      : undefined;
 
     return (
       <li
         className={classNames(
-          "px-2 py-1 align-sub break-words transform-gpu content-visibility-auto",
+          "px-2 py-1 align-sub break-words content-visibility-auto",
           {
             "bg-neutral-200": colorScheme === "light" && highlight,
             "bg-neutral-700": colorScheme === "dark" && highlight,
@@ -33,18 +45,7 @@ export const ChatRow = memo(
         ) : null}
         <b
           style={{
-            color: color
-              ? allyColor(
-                  color,
-                  colorScheme === "dark"
-                    ? highlight
-                      ? "#404040"
-                      : "#262626"
-                    : highlight
-                    ? "#e5e5e5"
-                    : "#f5f5f5"
-                )
-              : undefined,
+            color: displayNameColor,
           }}
         >
           {displayName}
@@ -55,6 +56,7 @@ export const ChatRow = memo(
   },
   (prevProps, nextProps) => {
     return (
+      prevProps.colorScheme === nextProps.colorScheme &&
       prevProps.highlight === nextProps.highlight &&
       prevProps.message === nextProps.message
     );

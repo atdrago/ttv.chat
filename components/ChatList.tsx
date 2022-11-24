@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ChatRow } from "components/ChatRow";
 import { useChatClient } from "hooks/useChatClient";
+import { useColorScheme } from "hooks/useColorScheme";
 import { isWebUrl } from "lib/isWebUrl";
 import type {
   BttvEmote,
@@ -31,6 +32,7 @@ export const ChatList = ({
   sevenTvChannelEmotes,
 }: ChatListProps) => {
   const chatClient = useChatClient(channelUser?.login);
+  const colorScheme = useColorScheme();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
@@ -287,7 +289,6 @@ export const ChatList = ({
         className="
           h-full flex flex-col gap-0.5 text-sm
           overflow-y-scroll overflow-x-hidden
-          transform-gpu
         "
         onScroll={handleScroll}
         onWheel={handleWheel}
@@ -303,6 +304,7 @@ export const ChatList = ({
       >
         {messages.map((message) => (
           <ChatRow
+            colorScheme={colorScheme}
             highlight={isAtStreamerRegExp.test(message.html)}
             key={message.id}
             message={message}

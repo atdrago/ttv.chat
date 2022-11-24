@@ -12,7 +12,6 @@
     "@tanstack/react-query": "^4.13.0",
     "@twurple/auth": "^5.2.5",
     "@twurple/chat": "^5.2.5",
-    "a11ycolor": "^2.0.9",
     "classnames": "^2.3.2",
     "cookies-next": "^2.1.1",
     "lodash.get": "^4.4.2",
