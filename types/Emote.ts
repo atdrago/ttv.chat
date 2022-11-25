@@ -21,7 +21,7 @@ export interface SevenTvEmote {
   owner: null;
   status: number;
   tags: null;
-  urls: [string, string];
+  urls: [string, string][];
   visibility_simple: unknown[];
   visibility: number;
   width: number[];

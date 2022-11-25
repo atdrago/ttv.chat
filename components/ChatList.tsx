@@ -79,12 +79,19 @@ export const ChatList = ({
                     if (sevenTvMatch) {
                       const emoteWidth = sevenTvMatch.width[0] ?? "";
 
+                      const src =
+                        sevenTvMatch.urls[sevenTvMatch.urls.length - 1][1];
+                      const srcSet = sevenTvMatch.urls
+                        .map(([density, url]) => `${url} ${density}x`)
+                        .join(", ");
+
                       return `
                         <img
                           alt="${word}"
                           title="${word}"
                           class="inline max-h-8"
-                          src="${sevenTvMatch.urls[0][1]}"
+                          src="${src}"
+                          srcset="${srcSet}"
                           width="${emoteWidth}"
                         />
                       `;
@@ -96,19 +103,41 @@ export const ChatList = ({
 
                     if (bttvEmote) {
                       const bttvEmoteId = bttvEmote.id;
-                      const src =
-                        bttvEmote?.images?.["1x"] ??
-                        `https://cdn.betterttv.net/emote/${bttvEmoteId}/1x`;
 
-                      return `
-                        <img
-                          alt="${word}"
-                          title="${word}"
-                          class="inline h-8"
-                          src="${src}"
-                          height="32"
-                        />
-                      `;
+                      if (bttvEmote.images) {
+                        const src =
+                          bttvEmote.images?.["4x"] ??
+                          `https://cdn.betterttv.net/emote/${bttvEmoteId}/4x`;
+                        const srcSet = Object.entries(bttvEmote.images ?? {})
+                          .map(([density, url]) => `${url} ${density}`)
+                          .join(", ");
+
+                        return `
+                          <img
+                            alt="${word}"
+                            title="${word}"
+                            class="inline h-8"
+                            src="${src}"
+                            srcset="${srcSet}"
+                            height="32"
+                          />
+                        `;
+                      } else {
+                        return `
+                          <img
+                            alt="${word}"
+                            title="${word}"
+                            class="inline h-8"
+                            src="${`https://cdn.betterttv.net/emote/${bttvEmoteId}/3x`}"
+                            srcset="${`
+                              https://cdn.betterttv.net/emote/${bttvEmoteId}/1x,
+                              https://cdn.betterttv.net/emote/${bttvEmoteId}/2x 2x,
+                              https://cdn.betterttv.net/emote/${bttvEmoteId}/3x 3x
+                            `}"
+                            height="32"
+                          />
+                        `;
+                      }
                     }
 
                     // Some emotes, like D:, look like valid URLs, so add links last
@@ -132,9 +161,26 @@ export const ChatList = ({
                     title="${part.displayInfo.code}"
                     src="${part.displayInfo.getUrl({
                       animationSettings: "default",
-                      size: "1.0",
-                      backgroundType: "dark",
+                      size: "3.0",
+                      backgroundType: colorScheme,
                     })}"
+                    srcset="
+                      ${part.displayInfo.getUrl({
+                        animationSettings: "default",
+                        size: "1.0",
+                        backgroundType: colorScheme,
+                      })},
+                      ${part.displayInfo.getUrl({
+                        animationSettings: "default",
+                        size: "2.0",
+                        backgroundType: colorScheme,
+                      })} 2x,
+                      ${part.displayInfo.getUrl({
+                        animationSettings: "default",
+                        size: "3.0",
+                        backgroundType: colorScheme,
+                      })} 3x
+                    "
                   />
                 `
               );
@@ -158,7 +204,12 @@ export const ChatList = ({
               <img
                 title="${badgeCategory}"
                 class="inline"
-                src="${badge?.image_url_1x}"
+                srcset="
+                  ${badge?.image_url_1x},
+                  ${badge?.image_url_2x} 2x,
+                  ${badge?.image_url_4x} 4x
+                "
+                src="${badge?.image_url_4x}"
                 width="18"
                 height="18"
               />
@@ -192,6 +243,7 @@ export const ChatList = ({
     bttvChannelEmotes,
     channelUser,
     chatClient,
+    colorScheme,
     sevenTvChannelEmotes,
   ]);
 
