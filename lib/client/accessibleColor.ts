@@ -1,31 +1,38 @@
-// Logic taken from a11yColor library and dependencies
+/**
+ * This module was inspired by the wonderful "a11ycolor" module, but was
+ * refactored with the following goals:
+ * - Remove the "color" library, which was ranking high in memory usage
+ * - Be less generic regarding color inputs (less processing)
+ * - Add TypeScript
+ * - Be more functional
+ */
 
 type RgbTuple = [number, number, number];
 type HslTuple = [number, number, number];
 
-function hexToRgb(hex: string): RgbTuple {
-  const red = parseInt(hex.slice(1, 3), 16);
-  const green = parseInt(hex.slice(3, 5), 16);
-  const blue = parseInt(hex.slice(5, 7), 16);
+function hexToRgb(hexColor: string): RgbTuple {
+  const red = parseInt(hexColor.slice(1, 3), 16);
+  const green = parseInt(hexColor.slice(3, 5), 16);
+  const blue = parseInt(hexColor.slice(5, 7), 16);
 
   return [red, green, blue];
 }
 
-function rgbToHex(color: RgbTuple): string {
+function rgbToHex(rgbColor: RgbTuple): string {
   const integer =
-    ((Math.round(color[0]) & 0xff) << 16) +
-    ((Math.round(color[1]) & 0xff) << 8) +
-    (Math.round(color[2]) & 0xff);
+    ((Math.round(rgbColor[0]) & 0xff) << 16) +
+    ((Math.round(rgbColor[1]) & 0xff) << 8) +
+    (Math.round(rgbColor[2]) & 0xff);
 
   const string = integer.toString(16).toUpperCase();
 
   return `#${"000000".substring(string.length) + string}`;
 }
 
-function rgbToHsl(color: RgbTuple): HslTuple {
-  const r = color[0] / 255;
-  const g = color[1] / 255;
-  const b = color[2] / 255;
+function rgbToHsl(rgbColor: RgbTuple): HslTuple {
+  const r = rgbColor[0] / 255;
+  const g = rgbColor[1] / 255;
+  const b = rgbColor[2] / 255;
   const min = Math.min(r, g, b);
   const max = Math.max(r, g, b);
   const delta = max - min;
@@ -61,10 +68,10 @@ function rgbToHsl(color: RgbTuple): HslTuple {
   return [h, s * 100, l * 100];
 }
 
-function hslToRgb(hsl: HslTuple): RgbTuple {
-  const h = hsl[0] / 360;
-  const s = hsl[1] / 100;
-  const l = hsl[2] / 100;
+function hslToRgb(hslColor: HslTuple): RgbTuple {
+  const h = hslColor[0] / 360;
+  const s = hslColor[1] / 100;
+  const l = hslColor[2] / 100;
   let t2;
   let t3;
   let val;
@@ -112,11 +119,11 @@ function hslToRgb(hsl: HslTuple): RgbTuple {
   return rgb;
 }
 
-function luminosity(color: RgbTuple) {
+function luminosity(rgbColor: RgbTuple): number {
   const lum = [];
 
-  for (let i = 0; i < color.length; i++) {
-    const chan = color[i] / 255;
+  for (let i = 0; i < rgbColor.length; i++) {
+    const chan = rgbColor[i] / 255;
     lum[i] =
       chan <= 0.03928 ? chan / 12.92 : Math.pow((chan + 0.055) / 1.055, 2.4);
   }
@@ -124,10 +131,10 @@ function luminosity(color: RgbTuple) {
   return 0.2126 * lum[0] + 0.7152 * lum[1] + 0.0722 * lum[2];
 }
 
-function contrast(color1: RgbTuple, color2: RgbTuple) {
+function contrast(rgbColor1: RgbTuple, rgbColor2: RgbTuple): number {
   // http://www.w3.org/TR/WCAG20/#contrast-ratiodef
-  const lum1 = luminosity(color1);
-  const lum2 = luminosity(color2);
+  const lum1 = luminosity(rgbColor1);
+  const lum2 = luminosity(rgbColor2);
 
   if (lum1 > lum2) {
     return (lum1 + 0.05) / (lum2 + 0.05);
@@ -136,27 +143,30 @@ function contrast(color1: RgbTuple, color2: RgbTuple) {
   return (lum2 + 0.05) / (lum1 + 0.05);
 }
 
-// Colors should be all 6 digit uppercase hex
+const RATIO = 4.5;
+const MIN_HEX_DIFF = 100 / 255; // 255 Colors / 100% HSL
+
+/**
+ * Calculate an accessible color based on a foreground (text) color and
+ * background color. Colors should be hex with leading '#'
+ */
 export const accessibleColor = (
   foregroundColor: string,
   backgroundColor: string
-) => {
-  const ratio = 4.5;
-
+): string => {
   const foregroundRgb = hexToRgb(foregroundColor);
   const backgroundRgb = hexToRgb(backgroundColor);
 
-  if (contrast(foregroundRgb, backgroundRgb) >= ratio) {
+  if (contrast(foregroundRgb, backgroundRgb) >= RATIO) {
     return foregroundColor;
   }
 
-  const foregroundHsl = rgbToHsl(foregroundRgb);
-  const foregroundLightness = foregroundHsl[2];
-  const minHexDiff = 100 / 255; // 255 Colors / 100% HSL
+  const [foregroundHue, foregroundSaturation, foregroundLightness] =
+    rgbToHsl(foregroundRgb);
 
-  const isBlackBackgroundContrast = contrast(backgroundRgb, [0, 0, 0]) >= ratio;
+  const isBlackBackgroundContrast = contrast(backgroundRgb, [0, 0, 0]) >= RATIO;
   const isWhiteBackgroundContrast =
-    contrast(backgroundRgb, [255, 255, 255]) >= ratio;
+    contrast(backgroundRgb, [255, 255, 255]) >= RATIO;
 
   let minLightness = 0;
   let maxLightness = 100;
@@ -188,14 +198,14 @@ export const accessibleColor = (
   while (!foundColor) {
     const midLightness = (minLightness + maxLightness) / 2;
     const midForeground = hslToRgb([
-      foregroundHsl[0],
-      foregroundHsl[1],
+      foregroundHue,
+      foregroundSaturation,
       midLightness,
     ]);
 
-    if (contrast(midForeground, backgroundRgb) >= ratio) {
+    if (contrast(midForeground, backgroundRgb) >= RATIO) {
       // It is the minimal lightness range for one hexadecimal
-      if (maxLightness - minLightness <= minHexDiff) {
+      if (maxLightness - minLightness <= MIN_HEX_DIFF) {
         foundColor = rgbToHex(midForeground);
       } else if (isDarkColor) {
         // If it is going to be a dark color move the min to mid
