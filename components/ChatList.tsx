@@ -260,7 +260,7 @@ export const ChatList = ({
       <ul
         ref={listRef}
         className="
-          h-full flex flex-col gap-0.5 text-sm
+          h-full flex flex-col gap-1 text-sm
           overflow-y-scroll overflow-x-hidden
         "
         onWheel={handleWheel}
