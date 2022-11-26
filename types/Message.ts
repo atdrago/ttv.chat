@@ -1,4 +1,5 @@
 export interface Message {
+  date: Date;
   id: string;
   channelUserName: string;
   displayName: string;

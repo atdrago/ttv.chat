@@ -10,9 +10,14 @@ interface ChatRowProps {
   colorScheme: "dark" | "light";
 }
 
+const formatTime = new Intl.DateTimeFormat("en-US", {
+  timeStyle: "short",
+  hour12: false,
+}).format;
+
 export const ChatRow = memo(
   function ChatRowComponent({ colorScheme, highlight, message }: ChatRowProps) {
-    const { badgeHtml, html, color, displayName } = message;
+    const { badgeHtml, color, date, displayName, html } = message;
 
     const backgroundColor =
       colorScheme === "dark"
@@ -37,6 +42,9 @@ export const ChatRow = memo(
           }
         )}
       >
+        <span className="pr-1 text-xs text-neutral-600 dark:text-neutral-400">
+          {formatTime(date)}
+        </span>
         {badgeHtml ? (
           <span
             className="inline-flex gap-1 pr-1 align-sub"

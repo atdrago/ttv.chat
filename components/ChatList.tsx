@@ -104,7 +104,9 @@ export const ChatList = ({
         const { id, target } = msg;
         const { color, displayName } = msg.userInfo;
         const channelUserName = target.value.slice(1);
+
         const message: Message = {
+          date: msg.date,
           badgeHtml,
           channelUserName,
           color,
