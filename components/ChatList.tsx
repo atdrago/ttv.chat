@@ -39,9 +39,7 @@ export const ChatList = ({
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
 
   const listRef = useRef<HTMLUListElement>(null);
-  const prevScrollTopRef = useRef(0);
   const prevWheelScrollTopRef = useRef(0);
-  const movingDownCountRef = useRef(0);
   const wheelMovingUpCountRef = useRef(0);
   const wheelMovingDownCountRef = useRef(0);
 
@@ -212,35 +210,6 @@ export const ChatList = ({
     }
   }, [isPinnedToBottom, messages]);
 
-  // Use scroll event ONLY for setting pinned to TRUE. This prevents the chat
-  // from ever erroneously unpinning because of normal chat scrolls.
-  const handleScroll = useCallback(() => {
-    if (listRef.current) {
-      const isMovingDown = listRef.current.scrollTop > prevScrollTopRef.current;
-      const isNearBottom =
-        listRef.current.scrollTop >=
-        listRef.current.scrollHeight - listRef.current.clientHeight - 2;
-
-      if (
-        isMovingDown &&
-        isNearBottom &&
-        !isPinnedToBottom &&
-        movingDownCountRef.current > 3 &&
-        wheelMovingUpCountRef.current === 0
-      ) {
-        setIsPinnedToBottom(true);
-      }
-
-      if (isMovingDown) {
-        movingDownCountRef.current += 1;
-      } else {
-        movingDownCountRef.current = 0;
-      }
-
-      prevScrollTopRef.current = listRef.current.scrollTop;
-    }
-  }, [isPinnedToBottom]);
-
   // Use wheel event ONLY for setting pinned to FALSE. This ensures it is a user
   // action that is causing the chat to unpin.
   const handleWheel = useCallback(() => {
@@ -249,15 +218,23 @@ export const ChatList = ({
         listRef.current.scrollTop > prevWheelScrollTopRef.current;
       const isMovingUp =
         listRef.current.scrollTop < prevWheelScrollTopRef.current;
+      const isNearBottom =
+        listRef.current.scrollTop >=
+        listRef.current.scrollHeight - listRef.current.clientHeight - 2;
 
       if (
         isMovingUp &&
         isPinnedToBottom &&
-        wheelMovingUpCountRef.current > 3 &&
-        wheelMovingDownCountRef.current === 0 &&
-        movingDownCountRef.current === 0
+        wheelMovingDownCountRef.current === 0
       ) {
         setIsPinnedToBottom(false);
+      } else if (
+        isMovingDown &&
+        isNearBottom &&
+        !isPinnedToBottom &&
+        wheelMovingUpCountRef.current === 0
+      ) {
+        setIsPinnedToBottom(true);
       }
 
       if (isMovingUp) {
@@ -286,7 +263,6 @@ export const ChatList = ({
           h-full flex flex-col gap-0.5 text-sm
           overflow-y-scroll overflow-x-hidden
         "
-        onScroll={handleScroll}
         onWheel={handleWheel}
         // When a mobile user starts touching the scrolling chat, this is an
         // immediate indication that we should "unpin" it from the bottom
