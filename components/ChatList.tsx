@@ -145,20 +145,22 @@ export const ChatList = ({
               ({ id }) => id === badgeDetail
             );
 
-            return `
-              <img
-                title="${badgeCategory}"
-                class="inline"
-                srcset="
-                  ${badge?.image_url_1x},
-                  ${badge?.image_url_2x} 2x,
-                  ${badge?.image_url_4x} 4x
-                "
-                src="${badge?.image_url_4x}"
-                width="18"
-                height="18"
-              />
-            `;
+            return badge
+              ? `
+                <img
+                  title="${badgeCategory}"
+                  class="inline"
+                  srcset="
+                    ${badge?.image_url_1x},
+                    ${badge?.image_url_2x} 2x,
+                    ${badge?.image_url_4x} 4x
+                  "
+                  src="${badge?.image_url_4x}"
+                  width="18"
+                  height="18"
+                />
+              `
+              : "";
           })
           .join("");
 
