@@ -1,23 +1,14 @@
-import { BttvEmote, SevenTvEmote } from "types";
-/**
- * Instead of <img />
- * Should be:
- * <>
- *   &ZeroWidthSpace;
- *   <span class="inline-block">
- *     <img class="-ml-100" />
- *   </span>
- * </>
- */
-const ZERO_WIDTH: string[] = [
-  // "SoSnowy",
-  // "IceCold",
-  // "SantaHat",
-  // "TopHat",
-  // "ReinDeer",
-  // "CandyCane",
-  // "cvMask",
-  // "cvHazmat",
+import { BttvEmote, SevenTvEmote, SevenTvEmoteVisibility } from "types";
+
+const BTTV_ZERO_WIDTH: string[] = [
+  "SoSnowy",
+  "IceCold",
+  "SantaHat",
+  "TopHat",
+  "ReinDeer",
+  "CandyCane",
+  "cvMask",
+  "cvHazmat",
 ];
 
 export const getThirdPartyEmoteHtml = (
@@ -26,26 +17,28 @@ export const getThirdPartyEmoteHtml = (
   sevenTvChannelEmotes: Record<string, Record<string, SevenTvEmote>>,
   bttvChannelEmotes: Record<string, Record<string, BttvEmote>>
 ): string | null => {
-  const isZeroWidth = ZERO_WIDTH.includes(word);
-
   let emoteHtml = null;
 
-  const sevenTvMatch =
+  const sevenTvEmote =
     sevenTvChannelEmotes?.[login]?.[word] ??
     sevenTvChannelEmotes?.["global"]?.[word];
 
   const bttvEmote =
     bttvChannelEmotes?.[login]?.[word] ?? bttvChannelEmotes?.["global"]?.[word];
 
-  if (!sevenTvMatch && !bttvEmote) {
+  if (!sevenTvEmote && !bttvEmote) {
     return null;
   }
 
-  if (sevenTvMatch) {
-    const emoteWidth = sevenTvMatch.width[0] ?? "";
+  let isZeroWidth = false;
 
-    const src = sevenTvMatch.urls[sevenTvMatch.urls.length - 1][1];
-    const srcSet = sevenTvMatch.urls
+  if (sevenTvEmote) {
+    isZeroWidth = sevenTvEmote.visibility === SevenTvEmoteVisibility.ZERO_WIDTH;
+
+    const emoteWidth = sevenTvEmote.width[0] ?? "";
+
+    const src = sevenTvEmote.urls[sevenTvEmote.urls.length - 1][1];
+    const srcSet = sevenTvEmote.urls
       .map(([density, url]) => `${url} ${density}x`)
       .join(", ");
 
@@ -53,18 +46,19 @@ export const getThirdPartyEmoteHtml = (
       <img
         alt="${word}"
         title="${word}"
-        class="inline max-h-8${isZeroWidth ? " max-w-none" : ""}"
+        class="inline h-8 max-h-8${isZeroWidth ? " max-w-none" : ""}"
         src="${src}"
         srcset="${srcSet}"
         width="${emoteWidth}"
       />
     `;
-  }
+  } else if (bttvEmote) {
+    isZeroWidth = BTTV_ZERO_WIDTH.includes(word);
 
-  if (bttvEmote) {
     const bttvEmoteId = bttvEmote.id;
 
     if (bttvEmote.images) {
+      // FrankerFaceZ
       const src =
         bttvEmote.images?.["4x"] ??
         `https://cdn.betterttv.net/emote/${bttvEmoteId}/4x`;
@@ -76,18 +70,19 @@ export const getThirdPartyEmoteHtml = (
         <img
           alt="${word}"
           title="${word}"
-          class="inline max-h-8${isZeroWidth ? " max-w-none" : ""}"
+          class="inline h-8 max-h-8${isZeroWidth ? " max-w-none" : ""}"
           src="${src}"
           srcset="${srcSet}"
           height="32"
         />
       `;
     } else {
+      // Better TTV
       emoteHtml = `
         <img
           alt="${word}"
           title="${word}"
-          class="inline max-h-8${isZeroWidth ? " max-w-none" : ""}"
+          class="inline h-8 max-h-8${isZeroWidth ? " max-w-none" : ""}"
           src="${`https://cdn.betterttv.net/emote/${bttvEmoteId}/3x`}"
           srcset="${`
             https://cdn.betterttv.net/emote/${bttvEmoteId}/1x,
