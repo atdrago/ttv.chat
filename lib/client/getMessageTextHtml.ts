@@ -22,7 +22,7 @@ export const getMessageTextHtml = (
       }
 
       if (emojiRegexp.test(word)) {
-        return word.replace(emojiRegexp, `<span class="text-3xl">$1</span>`);
+        return word.replace(emojiRegexp, `<span class="text-2xl">$1</span>`);
       }
 
       const emoteHtml = getThirdPartyEmoteHtml(
