@@ -1,3 +1,4 @@
+import { notNullOrUndefined } from "lib/notNullOrUndefined";
 import { BttvEmote, SevenTvEmote, SevenTvEmoteVisibility } from "types";
 
 const BTTV_ZERO_WIDTH: string[] = [
@@ -61,9 +62,12 @@ export const getThirdPartyEmoteHtml = (
       // FrankerFaceZ
       const src =
         bttvEmote.images?.["4x"] ??
-        `https://cdn.betterttv.net/emote/${bttvEmoteId}/4x`;
+        bttvEmote.images?.["2x"] ??
+        bttvEmote.images?.["1x"] ??
+        `https://cdn.betterttv.net/emote/${bttvEmoteId}/4`;
       const srcSet = Object.entries(bttvEmote.images ?? {})
-        .map(([density, url]) => `${url} ${density}`)
+        .map(([density, url]) => (url ? `${url} ${density}` : null))
+        .filter(notNullOrUndefined)
         .join(", ");
 
       emoteHtml = `
