@@ -68,7 +68,10 @@ export const ChatList = ({
                     }
 
                     if (emojiRegexp.test(word)) {
-                      return `<span class="text-3xl">${word}</span>`;
+                      return word.replace(
+                        emojiRegexp,
+                        `<span class="text-3xl">$1</span>`
+                      );
                     }
 
                     const emoteHtml = getThirdPartyEmoteHtml(
