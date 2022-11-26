@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatRow } from "components/ChatRow";
 import { useChatClient } from "hooks/useChatClient";
 import { useColorScheme } from "hooks/useColorScheme";
+import { getThirdPartyEmoteHtml } from "lib/client/getEmoteHtml";
 import { isWebUrl } from "lib/isWebUrl";
 import type {
   BttvEmote,
@@ -72,72 +73,15 @@ export const ChatList = ({
                       return `<span class="text-3xl">${word}</span>`;
                     }
 
-                    const sevenTvMatch =
-                      sevenTvChannelEmotes?.[login]?.[word] ??
-                      sevenTvChannelEmotes?.["global"]?.[word];
+                    const emoteHtml = getThirdPartyEmoteHtml(
+                      word,
+                      login,
+                      sevenTvChannelEmotes,
+                      bttvChannelEmotes
+                    );
 
-                    if (sevenTvMatch) {
-                      const emoteWidth = sevenTvMatch.width[0] ?? "";
-
-                      const src =
-                        sevenTvMatch.urls[sevenTvMatch.urls.length - 1][1];
-                      const srcSet = sevenTvMatch.urls
-                        .map(([density, url]) => `${url} ${density}x`)
-                        .join(", ");
-
-                      return `
-                        <img
-                          alt="${word}"
-                          title="${word}"
-                          class="inline max-h-8"
-                          src="${src}"
-                          srcset="${srcSet}"
-                          width="${emoteWidth}"
-                        />
-                      `;
-                    }
-
-                    const bttvEmote =
-                      bttvChannelEmotes?.[login]?.[word] ??
-                      bttvChannelEmotes?.["global"]?.[word];
-
-                    if (bttvEmote) {
-                      const bttvEmoteId = bttvEmote.id;
-
-                      if (bttvEmote.images) {
-                        const src =
-                          bttvEmote.images?.["4x"] ??
-                          `https://cdn.betterttv.net/emote/${bttvEmoteId}/4x`;
-                        const srcSet = Object.entries(bttvEmote.images ?? {})
-                          .map(([density, url]) => `${url} ${density}`)
-                          .join(", ");
-
-                        return `
-                          <img
-                            alt="${word}"
-                            title="${word}"
-                            class="inline h-8"
-                            src="${src}"
-                            srcset="${srcSet}"
-                            height="32"
-                          />
-                        `;
-                      } else {
-                        return `
-                          <img
-                            alt="${word}"
-                            title="${word}"
-                            class="inline h-8"
-                            src="${`https://cdn.betterttv.net/emote/${bttvEmoteId}/3x`}"
-                            srcset="${`
-                              https://cdn.betterttv.net/emote/${bttvEmoteId}/1x,
-                              https://cdn.betterttv.net/emote/${bttvEmoteId}/2x 2x,
-                              https://cdn.betterttv.net/emote/${bttvEmoteId}/3x 3x
-                            `}"
-                            height="32"
-                          />
-                        `;
-                      }
+                    if (emoteHtml) {
+                      return emoteHtml;
                     }
 
                     // Some emotes, like D:, look like valid URLs, so add links last
