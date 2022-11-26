@@ -87,7 +87,15 @@ export const ChatList = ({
 
                     // Some emotes, like D:, look like valid URLs, so add links last
                     if (isWebUrl(word)) {
-                      return `<a class="underline" href="${word}" target="_blank">${word}</a>`;
+                      return `
+                        <a
+                          class="underline"
+                          href="${word}"
+                          target="_blank"
+                        >
+                          ${word}
+                        </a>
+                      `;
                     }
 
                     return word;
@@ -203,7 +211,7 @@ export const ChatList = ({
         prevMessages.slice(prevMessages.length - MESSAGE_BUFFER_SIZE)
       );
     }
-  }, [isOverMessageThreshold, isPinnedToBottom, messages]);
+  }, [isOverMessageThreshold, isPinnedToBottom]);
 
   // Scroll the newest messages into view when:
   // - messages change
@@ -215,8 +223,12 @@ export const ChatList = ({
     }
   }, [isPinnedToBottom, messages]);
 
-  // Use wheel event ONLY for setting pinned to FALSE. This ensures it is a user
-  // action that is causing the chat to unpin.
+  // Use wheel event instead of scroll event to determine when to pin/unpin
+  // because it's difficult to determine what is triggering the scroll: the
+  // user, or another message being added and scrolled to programmatically. The
+  // wheel event is not triggered by changes to scrollTop.
+  // Unfortunately this means there's no way to scroll and pin to the bottom on
+  // mobile, since they have no wheel event.
   const handleWheel = useCallback(() => {
     if (listRef.current) {
       const isMovingDown =
@@ -243,13 +255,13 @@ export const ChatList = ({
       }
 
       if (isMovingUp) {
-        wheelMovingUpCountRef.current += 1;
+        wheelMovingUpCountRef.current++;
       } else {
         wheelMovingUpCountRef.current = 0;
       }
 
       if (isMovingDown) {
-        wheelMovingDownCountRef.current += 1;
+        wheelMovingDownCountRef.current++;
       } else {
         wheelMovingDownCountRef.current = 0;
       }
