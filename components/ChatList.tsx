@@ -86,6 +86,7 @@ export const ChatList = ({
             return `
               <img
                 title="${badgeCategory}"
+                alt="${badgeCategory}"
                 class="inline"
                 srcset="
                   ${badge.image_url_1x},
