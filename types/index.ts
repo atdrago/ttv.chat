@@ -1,3 +1,4 @@
+export * from "./ColorScheme";
 export * from "./Emote";
 export * from "./Message";
 export * from "./TwitchBadge";

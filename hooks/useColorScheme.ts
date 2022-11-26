@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-type ColorScheme = "dark" | "light";
+import type { ColorScheme } from "types";
 
 export const useColorScheme = (): ColorScheme => {
   const [colorScheme, setColorScheme] = useState<ColorScheme>("dark");

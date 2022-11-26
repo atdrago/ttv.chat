@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatRow } from "components/ChatRow";
 import { useChatClient } from "hooks/useChatClient";
 import { useColorScheme } from "hooks/useColorScheme";
-import { getThirdPartyEmoteHtml } from "lib/client/getEmoteHtml";
-import { isWebUrl } from "lib/isWebUrl";
+import { getMessageEmoteHtml } from "lib/client/getMessageEmoteHtml";
+import { getMessageTextHtml } from "lib/client/getMessageTextHtml";
 import type {
   BttvEmote,
   Message,
@@ -17,12 +17,9 @@ import type {
 interface ChatListProps {
   badges?: TwitchBadge[];
   channelUser?: TwitchUser;
-  isPinnedToBottom?: boolean;
-  onIsPinnedToBottomChange?: (isPinnedToBottom: boolean) => void;
   bttvChannelEmotes: Record<string, Record<string, BttvEmote>>;
   sevenTvChannelEmotes: Record<string, Record<string, SevenTvEmote>>;
 }
-const emojiRegexp = /(\p{EPres}|\p{ExtPict})(\u200d(\p{EPres}|\p{ExtPict}))*/gu;
 const MAX_MESSAGES = 500;
 const MESSAGE_BUFFER_SIZE = 100;
 
@@ -58,85 +55,16 @@ export const ChatList = ({
             case "text": {
               return (
                 acc +
-                part.text
-                  .split(" ")
-                  .map((word) => {
-                    const login = channelUser?.login ?? "";
-
-                    if (word.startsWith("@")) {
-                      return `<b>${word}</b>`;
-                    }
-
-                    if (emojiRegexp.test(word)) {
-                      return word.replace(
-                        emojiRegexp,
-                        `<span class="text-3xl">$1</span>`
-                      );
-                    }
-
-                    const emoteHtml = getThirdPartyEmoteHtml(
-                      word,
-                      login,
-                      sevenTvChannelEmotes,
-                      bttvChannelEmotes
-                    );
-
-                    if (emoteHtml) {
-                      return emoteHtml;
-                    }
-
-                    // Some emotes, like D:, look like valid URLs, so add links last
-                    if (isWebUrl(word)) {
-                      return `
-                        <a
-                          class="underline"
-                          href="${word}"
-                          target="_blank"
-                        >
-                          ${word}
-                        </a>
-                      `;
-                    }
-
-                    return word;
-                  })
-                  .join(" ")
+                getMessageTextHtml(
+                  part,
+                  sevenTvChannelEmotes,
+                  bttvChannelEmotes,
+                  channelUser
+                )
               );
             }
             case "emote": {
-              return (
-                acc +
-                `
-                  <img
-                    height="32"
-                    class="inline h-8"
-                    alt="${part.displayInfo.code}"
-                    title="${part.displayInfo.code}"
-                    src="${part.displayInfo.getUrl({
-                      animationSettings: "default",
-                      size: "3.0",
-                      backgroundType: colorScheme,
-                    })}"
-                    srcset="
-                      ${part.displayInfo.getUrl({
-                        animationSettings: "default",
-                        size: "1.0",
-                        backgroundType: colorScheme,
-                      })},
-                      ${part.displayInfo.getUrl({
-                        animationSettings: "default",
-                        size: "2.0",
-                        backgroundType: colorScheme,
-                      })} 2x,
-                      ${part.displayInfo.getUrl({
-                        animationSettings: "default",
-                        size: "3.0",
-                        backgroundType: colorScheme,
-                      })} 3x
-                    "
-                  />
-                `
-              );
+              return acc + getMessageEmoteHtml(part, colorScheme);
             }
             default:
               return acc + "???";
@@ -153,22 +81,22 @@ export const ChatList = ({
               ({ id }) => id === badgeDetail
             );
 
-            return badge
-              ? `
-                <img
-                  title="${badgeCategory}"
-                  class="inline"
-                  srcset="
-                    ${badge?.image_url_1x},
-                    ${badge?.image_url_2x} 2x,
-                    ${badge?.image_url_4x} 4x
-                  "
-                  src="${badge?.image_url_4x}"
-                  width="18"
-                  height="18"
-                />
-              `
-              : "";
+            if (!badge) return "";
+
+            return `
+              <img
+                title="${badgeCategory}"
+                class="inline"
+                srcset="
+                  ${badge.image_url_1x},
+                  ${badge.image_url_2x} 2x,
+                  ${badge.image_url_4x} 4x
+                "
+                src="${badge.image_url_4x}"
+                width="18"
+                height="18"
+              />
+            `;
           })
           .join("");
 
