@@ -22,7 +22,7 @@ interface ChatListProps {
   bttvChannelEmotes: Record<string, Record<string, BttvEmote>>;
   sevenTvChannelEmotes: Record<string, Record<string, SevenTvEmote>>;
 }
-const emojiRegexp = /(\p{EPres}|\p{ExtPict})(\u200d(\p{EPres}|\p{ExtPict}))/gu;
+const emojiRegexp = /(\p{EPres}|\p{ExtPict})(\u200d(\p{EPres}|\p{ExtPict}))*/gu;
 const MAX_MESSAGES = 500;
 const MESSAGE_BUFFER_SIZE = 100;
 
