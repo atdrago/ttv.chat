@@ -35,10 +35,12 @@ export const ChatRow = memo(
     return (
       <li
         className={classNames(
-          "px-2 py-1 align-sub break-words content-visibility-auto border-l-4 border-transparent",
+          "px-2 py-1 align-sub break-words content-visibility-auto border-l-2 border-transparent",
           {
-            "bg-neutral-200": colorScheme === "light" && highlight,
-            "bg-neutral-700": colorScheme === "dark" && highlight,
+            "border-neutral-400 bg-neutral-200":
+              colorScheme === "light" && highlight,
+            "border-neutral-500 bg-neutral-700":
+              colorScheme === "dark" && highlight,
             "border-violet-500 bg-violet-500 bg-opacity-25":
               colorScheme === "light" && kind === "subscription",
             "border-violet-700 bg-violet-700 bg-opacity-25":
