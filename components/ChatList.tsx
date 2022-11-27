@@ -1,11 +1,12 @@
+import { UserNotice } from "@twurple/chat/lib";
 import { ArrowDown } from "phosphor-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ChatRow } from "components/ChatRow";
 import { useChatClient } from "hooks/useChatClient";
 import { useColorScheme } from "hooks/useColorScheme";
-import { getMessageEmoteHtml } from "lib/client/getMessageEmoteHtml";
-import { getMessageTextHtml } from "lib/client/getMessageTextHtml";
+import { getBadgeHtml } from "lib/client/getBadgeHtml";
+import { getMessageHtml } from "lib/client/getMessageHtml";
 import type {
   BttvEmote,
   Message,
@@ -44,85 +45,159 @@ export const ChatList = ({
   // doesn't get unmounted
   useEffect(() => setMessages([]), [channelUser]);
 
+  if (process.env.NODE_ENV === "development") {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      if (!chatClient) {
+        return () => null;
+      }
+
+      const handleEmoteOnly = chatClient.onEmoteOnly((_channel, enabled) => {
+        // eslint-disable-next-line no-console
+        console.log("handleEmoteOnly", { enabled });
+      });
+
+      const handleFollowersOnly = chatClient.onFollowersOnly(
+        (_channel, enabled, delay) => {
+          // eslint-disable-next-line no-console
+          console.log("handleFollowersOnly", { enabled, delay });
+        }
+      );
+
+      return () => {
+        chatClient.removeListener(handleEmoteOnly);
+        chatClient.removeListener(handleFollowersOnly);
+      };
+    }, [
+      badges,
+      bttvChannelEmotes,
+      channelUser,
+      chatClient,
+      colorScheme,
+      sevenTvChannelEmotes,
+    ]);
+  }
+
   // Handles adding new messages and replacing emote tokens with emote images,
   // changing URLs into links, increasing emoji font size, and making usernames
   // bold
   useEffect(() => {
-    const messageHandler = chatClient?.onMessage(
-      (_channel, _user, _text, msg) => {
-        const html = msg.parseEmotes().reduce((acc, part) => {
-          switch (part.type) {
-            case "text": {
-              return (
-                acc +
-                getMessageTextHtml(
-                  part,
-                  sevenTvChannelEmotes,
-                  bttvChannelEmotes,
-                  channelUser
-                )
-              );
-            }
-            case "emote": {
-              return acc + getMessageEmoteHtml(part, colorScheme);
-            }
-            default:
-              return acc + "???";
-          }
-        }, "");
+    if (!chatClient) {
+      return () => null;
+    }
 
-        const badgeHtml = Array.from(msg.userInfo.badges.entries())
-          .map(([badgeCategory, badgeDetail]) => {
-            const badgeSet = badges?.find(
-              ({ set_id }) => set_id === badgeCategory
-            );
+    const handleChatClear = chatClient.onChatClear(() => {
+      setMessages([]);
+    });
 
-            const badge = badgeSet?.versions.find(
-              ({ id }) => id === badgeDetail
-            );
+    const handleMessage = chatClient.onMessage(
+      (_channel, _user, _text, twitchPrivateMessage) => {
+        const html = getMessageHtml(
+          twitchPrivateMessage.parseEmotes(),
+          sevenTvChannelEmotes,
+          bttvChannelEmotes,
+          colorScheme,
+          channelUser
+        );
 
-            if (!badge) return "";
+        const badgeHtml = getBadgeHtml(
+          twitchPrivateMessage.userInfo.badges,
+          badges
+        );
 
-            return `
-              <img
-                title="${badgeCategory}"
-                alt="${badgeCategory}"
-                class="inline"
-                srcset="
-                  ${badge.image_url_1x},
-                  ${badge.image_url_2x} 2x,
-                  ${badge.image_url_4x} 4x
-                "
-                src="${badge.image_url_4x}"
-                width="18"
-                height="18"
-              />
-            `;
-          })
-          .join("");
-
-        const { id, target } = msg;
-        const { color, displayName } = msg.userInfo;
-        const channelUserName = target.value.slice(1);
+        const { id } = twitchPrivateMessage;
+        const { color, displayName } = twitchPrivateMessage.userInfo;
 
         const message: Message = {
-          date: msg.date,
           badgeHtml,
-          channelUserName,
           color,
+          date: twitchPrivateMessage.date,
           displayName,
           html,
           id,
+          kind: "normal",
         };
 
         setMessages((prevMessages) => prevMessages.concat([message]));
       }
     );
 
+    function addUserNotice(userNotice: UserNotice) {
+      const html = getMessageHtml(
+        userNotice.parseEmotes(),
+        sevenTvChannelEmotes,
+        bttvChannelEmotes,
+        colorScheme,
+        channelUser
+      );
+
+      const badgeHtml = getBadgeHtml(userNotice.userInfo.badges, badges);
+
+      const { id } = userNotice;
+      const { color, displayName } = userNotice.userInfo;
+
+      const message: Message = {
+        badgeHtml,
+        color,
+        date: userNotice.date,
+        displayName,
+        html,
+        id,
+        kind: "subscription",
+        systemMessage: userNotice.tags.get("system-msg") ?? "",
+      };
+
+      setMessages((prevMessages) => prevMessages.concat([message]));
+    }
+
+    const handleBitsBadgeUpgrade = chatClient.onBitsBadgeUpgrade(
+      (_channel, _user, _upgradeInfo, userNotice) => addUserNotice(userNotice)
+    );
+
+    const handleCommunitySub = chatClient.onCommunitySub(
+      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
+    );
+
+    const handleResub = chatClient.onResub(
+      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
+    );
+
+    const handleSub = chatClient.onSub(
+      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
+    );
+
+    const handleGiftPaidUpgrade = chatClient.onGiftPaidUpgrade(
+      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
+    );
+
+    const handleSubExtend = chatClient.onSubExtend(
+      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
+    );
+
+    const handleSubGift = chatClient.onSubGift(
+      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
+    );
+
+    const handlePrimeCommunityGift = chatClient.onPrimeCommunityGift(
+      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
+    );
+
+    const handlePrimePaidUpgrade = chatClient.onPrimePaidUpgrade(
+      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
+    );
+
     return () => {
-      if (chatClient && messageHandler) {
-        chatClient.removeListener(messageHandler);
-      }
+      chatClient.removeListener(handleBitsBadgeUpgrade);
+      chatClient.removeListener(handleCommunitySub);
+      chatClient.removeListener(handleChatClear);
+      chatClient.removeListener(handleMessage);
+      chatClient.removeListener(handleResub);
+      chatClient.removeListener(handleSub);
+      chatClient.removeListener(handleGiftPaidUpgrade);
+      chatClient.removeListener(handlePrimeCommunityGift);
+      chatClient.removeListener(handlePrimePaidUpgrade);
+      chatClient.removeListener(handleSubExtend);
+      chatClient.removeListener(handleSubGift);
     };
   }, [
     badges,

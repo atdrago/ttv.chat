@@ -37,7 +37,7 @@ export const Header = ({ currentChannelUser }: HeaderProps) => {
   return (
     <div
       className="
-        p-2
+        py-2 px-3
         bg-neutral-300 text-neutral-900
         dark:bg-neutral-900 dark:text-neutral-300
         flex gap-3 items-center justify-between

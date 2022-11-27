@@ -1,9 +1,16 @@
-export interface Message {
+export type Message = {
   date: Date;
   id: string;
-  channelUserName: string;
   displayName: string;
   color: string | undefined;
   html: string;
   badgeHtml: string;
-}
+} & (
+  | {
+      kind: "normal";
+    }
+  | {
+      kind: "subscription";
+      systemMessage: string;
+    }
+);
