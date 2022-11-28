@@ -122,7 +122,12 @@ export const ChatList = ({
       }
     );
 
-    function addUserNotice(userNotice: UserNotice) {
+    function addUserNotice(
+      _channel: string,
+      _user: string,
+      _upgradeInfo: unknown,
+      userNotice: UserNotice
+    ) {
       const html = getMessageHtml(
         userNotice.parseEmotes(),
         sevenTvChannelEmotes,
@@ -150,41 +155,16 @@ export const ChatList = ({
       setMessages((prevMessages) => prevMessages.concat([message]));
     }
 
-    const handleBitsBadgeUpgrade = chatClient.onBitsBadgeUpgrade(
-      (_channel, _user, _upgradeInfo, userNotice) => addUserNotice(userNotice)
-    );
-
-    const handleCommunitySub = chatClient.onCommunitySub(
-      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
-    );
-
-    const handleResub = chatClient.onResub(
-      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
-    );
-
-    const handleSub = chatClient.onSub(
-      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
-    );
-
-    const handleGiftPaidUpgrade = chatClient.onGiftPaidUpgrade(
-      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
-    );
-
-    const handleSubExtend = chatClient.onSubExtend(
-      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
-    );
-
-    const handleSubGift = chatClient.onSubGift(
-      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
-    );
-
-    const handlePrimeCommunityGift = chatClient.onPrimeCommunityGift(
-      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
-    );
-
-    const handlePrimePaidUpgrade = chatClient.onPrimePaidUpgrade(
-      (_channel, _user, _subInfo, userNotice) => addUserNotice(userNotice)
-    );
+    const handleBitsBadgeUpgrade = chatClient.onBitsBadgeUpgrade(addUserNotice);
+    const handleCommunitySub = chatClient.onCommunitySub(addUserNotice);
+    const handleResub = chatClient.onResub(addUserNotice);
+    const handleSub = chatClient.onSub(addUserNotice);
+    const handleGiftPaidUpgrade = chatClient.onGiftPaidUpgrade(addUserNotice);
+    const handleSubExtend = chatClient.onSubExtend(addUserNotice);
+    const handleSubGift = chatClient.onSubGift(addUserNotice);
+    const handlePrimeCommunityGift =
+      chatClient.onPrimeCommunityGift(addUserNotice);
+    const handlePrimePaidUpgrade = chatClient.onPrimePaidUpgrade(addUserNotice);
 
     return () => {
       chatClient.removeListener(handleBitsBadgeUpgrade);
