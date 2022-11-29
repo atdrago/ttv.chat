@@ -34,7 +34,9 @@ export const ChatList = ({
   const colorScheme = useColorScheme();
 
   const [messages, setMessages] = useState<Message[]>([]);
+  const [topEmotes, setTopEmotes] = useState<string[]>([]);
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
+  const [emoteMap, setEmoteMap] = useState<Record<string, number>>({});
 
   const listRef = useRef<HTMLUListElement>(null);
   const prevWheelScrollTopRef = useRef(0);
@@ -43,7 +45,11 @@ export const ChatList = ({
 
   // Make sure messages get cleared if the channelUser changes and the component
   // doesn't get unmounted
-  useEffect(() => setMessages([]), [channelUser]);
+  useEffect(() => {
+    setMessages([]);
+    setTopEmotes([]);
+    setEmoteMap({});
+  }, [channelUser]);
 
   if (process.env.NODE_ENV === "development") {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -78,6 +84,18 @@ export const ChatList = ({
     ]);
   }
 
+  useEffect(() => {
+    setEmoteMap(() => {
+      const nextEmoteMap: Record<string, number> = {};
+
+      topEmotes.forEach((emote) => {
+        nextEmoteMap[emote] = (nextEmoteMap[emote] ?? 0) + 1;
+      });
+
+      return nextEmoteMap;
+    });
+  }, [topEmotes]);
+
   // Handles adding new messages and replacing emote tokens with emote images,
   // changing URLs into links, increasing emoji font size, and making usernames
   // bold
@@ -88,17 +106,36 @@ export const ChatList = ({
 
     const handleChatClear = chatClient.onChatClear(() => {
       setMessages([]);
+      setTopEmotes([]);
+      setEmoteMap({});
     });
 
     const handleMessage = chatClient.onMessage(
       (_channel, _user, _text, twitchPrivateMessage) => {
+        const messageParts = twitchPrivateMessage.parseEmotes();
+
         const html = getMessageHtml(
-          twitchPrivateMessage.parseEmotes(),
+          messageParts,
           sevenTvChannelEmotes,
           bttvChannelEmotes,
           colorScheme,
           channelUser
         );
+
+        setTopEmotes((prevTopEmotes) => {
+          const MAX_TOP_EMOTES = 100;
+          const messagesEmotes = Array.from(
+            new Set(
+              html
+                .match(/<img.*?\/>/gs)
+                ?.map((imgHtml) => imgHtml.replaceAll(/[\s\n]+/g, " "))
+            )
+          );
+
+          return prevTopEmotes.length >= MAX_TOP_EMOTES
+            ? [...prevTopEmotes.slice(messagesEmotes.length), ...messagesEmotes]
+            : [...prevTopEmotes, ...messagesEmotes];
+        });
 
         const badgeHtml = getBadgeHtml(
           twitchPrivateMessage.userInfo.badges,
@@ -122,7 +159,7 @@ export const ChatList = ({
       }
     );
 
-    function addUserNotice(
+    function handleUserNotice(
       _channel: string,
       _user: string,
       _upgradeInfo: unknown,
@@ -155,16 +192,19 @@ export const ChatList = ({
       setMessages((prevMessages) => prevMessages.concat([message]));
     }
 
-    const handleBitsBadgeUpgrade = chatClient.onBitsBadgeUpgrade(addUserNotice);
-    const handleCommunitySub = chatClient.onCommunitySub(addUserNotice);
-    const handleResub = chatClient.onResub(addUserNotice);
-    const handleSub = chatClient.onSub(addUserNotice);
-    const handleGiftPaidUpgrade = chatClient.onGiftPaidUpgrade(addUserNotice);
-    const handleSubExtend = chatClient.onSubExtend(addUserNotice);
-    const handleSubGift = chatClient.onSubGift(addUserNotice);
+    const handleBitsBadgeUpgrade =
+      chatClient.onBitsBadgeUpgrade(handleUserNotice);
+    const handleCommunitySub = chatClient.onCommunitySub(handleUserNotice);
+    const handleResub = chatClient.onResub(handleUserNotice);
+    const handleSub = chatClient.onSub(handleUserNotice);
+    const handleGiftPaidUpgrade =
+      chatClient.onGiftPaidUpgrade(handleUserNotice);
+    const handleSubExtend = chatClient.onSubExtend(handleUserNotice);
+    const handleSubGift = chatClient.onSubGift(handleUserNotice);
     const handlePrimeCommunityGift =
-      chatClient.onPrimeCommunityGift(addUserNotice);
-    const handlePrimePaidUpgrade = chatClient.onPrimePaidUpgrade(addUserNotice);
+      chatClient.onPrimeCommunityGift(handleUserNotice);
+    const handlePrimePaidUpgrade =
+      chatClient.onPrimePaidUpgrade(handleUserNotice);
 
     return () => {
       chatClient.removeListener(handleBitsBadgeUpgrade);
@@ -286,6 +326,29 @@ export const ChatList = ({
           />
         ))}
       </ul>
+      <div className="absolute top-14 p-2 right-0">
+        <div className="flex gap-2 flex-wrap justify-end">
+          {Object.entries(emoteMap)
+            .sort(([_a, countA], [_b, countB]) => {
+              return countB - countA;
+            })
+            .map(([emoteHtml, count], index) =>
+              count > 5 ? (
+                <div
+                  className="
+                    bg-zinc-400 dark:bg-zinc-700 bg-opacity-70
+                    p-2 pb-1 rounded text-center
+                    flex flex-col gap-1 justify-center align-center
+                  "
+                  key={index}
+                >
+                  <span dangerouslySetInnerHTML={{ __html: emoteHtml }} />
+                  <p className="text-sm">{count}</p>
+                </div>
+              ) : null
+            )}
+        </div>
+      </div>
       <div
         className="
           absolute bottom-0 left-0 right-0 pb-4 flex justify-center
