@@ -1,4 +1,5 @@
-import { UserNotice } from "@twurple/chat/lib";
+import type { UserNotice } from "@twurple/chat/lib";
+import type { TwitchPrivateMessage } from "@twurple/chat/lib/commands/TwitchPrivateMessage";
 import { ArrowDown } from "phosphor-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -110,60 +111,12 @@ export const ChatList = ({
       setEmoteMap({});
     });
 
-    const handleMessage = chatClient.onMessage(
-      (_channel, _user, _text, twitchPrivateMessage) => {
-        const messageParts = twitchPrivateMessage.parseEmotes();
-
-        const html = getMessageHtml(
-          messageParts,
-          sevenTvChannelEmotes,
-          bttvChannelEmotes,
-          colorScheme,
-          channelUser
-        );
-
-        setTopEmotes((prevTopEmotes) => {
-          const MAX_TOP_EMOTES = 100;
-          const messagesEmotes = Array.from(
-            new Set(
-              html
-                .match(/<img.*?\/>/gs)
-                ?.map((imgHtml) => imgHtml.replaceAll(/[\s\n]+/g, " "))
-            )
-          );
-
-          return prevTopEmotes.length >= MAX_TOP_EMOTES
-            ? [...prevTopEmotes.slice(messagesEmotes.length), ...messagesEmotes]
-            : [...prevTopEmotes, ...messagesEmotes];
-        });
-
-        const badgeHtml = getBadgeHtml(
-          twitchPrivateMessage.userInfo.badges,
-          badges
-        );
-
-        const { id } = twitchPrivateMessage;
-        const { color, displayName } = twitchPrivateMessage.userInfo;
-
-        const message: Message = {
-          badgeHtml,
-          color,
-          date: twitchPrivateMessage.date,
-          displayName,
-          html,
-          id,
-          kind: "normal",
-        };
-
-        setMessages((prevMessages) => prevMessages.concat([message]));
-      }
-    );
-
     function handleUserNotice(
       _channel: string,
       _user: string,
-      _upgradeInfo: unknown,
-      userNotice: UserNotice
+      // When textOrUpgradeInfo is a string, userNotice is a TwitchPrivateMessage
+      textOrUpgradeInfo: string | unknown,
+      userNotice: TwitchPrivateMessage | UserNotice
     ) {
       const html = getMessageHtml(
         userNotice.parseEmotes(),
@@ -173,10 +126,26 @@ export const ChatList = ({
         channelUser
       );
 
+      setTopEmotes((prevTopEmotes) => {
+        const MAX_TOP_EMOTES = 100;
+        const messagesEmotes = Array.from(
+          new Set(
+            html
+              .match(/<img.*?\/>/gs)
+              ?.map((imgHtml) => imgHtml.replaceAll(/[\s\n]+/g, " "))
+          )
+        );
+
+        return prevTopEmotes.length >= MAX_TOP_EMOTES
+          ? [...prevTopEmotes.slice(messagesEmotes.length), ...messagesEmotes]
+          : [...prevTopEmotes, ...messagesEmotes];
+      });
       const badgeHtml = getBadgeHtml(userNotice.userInfo.badges, badges);
 
       const { id } = userNotice;
       const { color, displayName } = userNotice.userInfo;
+
+      const isMessage = typeof textOrUpgradeInfo === "string";
 
       const message: Message = {
         badgeHtml,
@@ -185,7 +154,7 @@ export const ChatList = ({
         displayName,
         html,
         id,
-        kind: "subscription",
+        kind: isMessage ? "normal" : "subscription",
         systemMessage: userNotice.tags.get("system-msg") ?? "",
       };
 
@@ -205,6 +174,7 @@ export const ChatList = ({
       chatClient.onPrimeCommunityGift(handleUserNotice);
     const handlePrimePaidUpgrade =
       chatClient.onPrimePaidUpgrade(handleUserNotice);
+    const handleMessage = chatClient.onMessage(handleUserNotice);
 
     return () => {
       chatClient.removeListener(handleBitsBadgeUpgrade);
@@ -326,8 +296,8 @@ export const ChatList = ({
           />
         ))}
       </ul>
-      <div className="absolute top-14 p-2 right-0">
-        <div className="flex gap-2 flex-wrap justify-end">
+      <div className="absolute top-14 p-2 right-0 bg-neutral-100 dark:bg-neutral-800 bg-opacity-60">
+        <div className="flex gap-2 flex-wrap justify-end ">
           {Object.entries(emoteMap)
             .sort(([_a, countA], [_b, countB]) => {
               return countB - countA;
@@ -336,14 +306,13 @@ export const ChatList = ({
               count > 5 ? (
                 <div
                   className="
-                    bg-zinc-400 dark:bg-zinc-700 bg-opacity-70
-                    p-2 pb-1 rounded text-center
+                    rounded text-center relative
                     flex flex-col gap-1 justify-center align-center
                   "
                   key={index}
                 >
                   <span dangerouslySetInnerHTML={{ __html: emoteHtml }} />
-                  <p className="text-sm">{count}</p>
+                  <p className="text-sm text-center font-bold">{count}</p>
                 </div>
               ) : null
             )}
