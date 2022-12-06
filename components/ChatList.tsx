@@ -306,7 +306,7 @@ export const ChatList = ({
           className="
             absolute p-2 top-2 right-3
             bg-opacity-60 dark:bg-opacity-60 bg-neutral-300 dark:bg-neutral-900
-            rounded backdrop-blur shadow-md
+            rounded backdrop-blur shadow-sm
           "
         >
           <div className="flex gap-2 flex-wrap justify-end">
