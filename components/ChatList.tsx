@@ -37,7 +37,7 @@ export const ChatList = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [topEmotes, setTopEmotes] = useState<string[]>([]);
   const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
-  const [emoteMap, setEmoteMap] = useState<Record<string, number>>({});
+  const [topEmotesMap, setTopEmotesMap] = useState<Record<string, number>>({});
 
   const listRef = useRef<HTMLUListElement>(null);
   const prevWheelScrollTopRef = useRef(0);
@@ -49,7 +49,7 @@ export const ChatList = ({
   useEffect(() => {
     setMessages([]);
     setTopEmotes([]);
-    setEmoteMap({});
+    setTopEmotesMap({});
   }, [channelUser]);
 
   if (process.env.NODE_ENV === "development") {
@@ -86,7 +86,7 @@ export const ChatList = ({
   }
 
   useEffect(() => {
-    setEmoteMap(() => {
+    setTopEmotesMap(() => {
       const nextEmoteMap: Record<string, number> = {};
 
       topEmotes.forEach((emote) => {
@@ -108,7 +108,7 @@ export const ChatList = ({
     const handleChatClear = chatClient.onChatClear(() => {
       setMessages([]);
       setTopEmotes([]);
-      setEmoteMap({});
+      setTopEmotesMap({});
     });
 
     function handleUserNotice(
@@ -268,8 +268,13 @@ export const ChatList = ({
 
   const isAtStreamerRegExp = new RegExp(`@${channelUser?.login}`, "i");
 
+  const topEmotesEntries = Object.entries(topEmotesMap);
+  const topEmotesEntriesFilteredAndSorted = topEmotesEntries
+    .filter(([_, count]) => count > 5)
+    .sort(([_a, countA], [_b, countB]) => countB - countA);
+
   return (
-    <>
+    <div className="h-full w-full relative">
       <ul
         ref={listRef}
         className="
@@ -296,14 +301,17 @@ export const ChatList = ({
           />
         ))}
       </ul>
-      <div className="absolute top-14 p-2 right-0 bg-neutral-100 dark:bg-neutral-800 bg-opacity-60">
-        <div className="flex gap-2 flex-wrap justify-end ">
-          {Object.entries(emoteMap)
-            .sort(([_a, countA], [_b, countB]) => {
-              return countB - countA;
-            })
-            .map(([emoteHtml, count], index) =>
-              count > 5 ? (
+      {topEmotesEntriesFilteredAndSorted.length > 0 ? (
+        <div
+          className="
+            absolute p-2 top-2 right-3
+            bg-opacity-60 dark:bg-opacity-60 bg-neutral-300 dark:bg-neutral-900
+            rounded backdrop-blur shadow-md
+          "
+        >
+          <div className="flex gap-2 flex-wrap justify-end">
+            {topEmotesEntriesFilteredAndSorted.map(
+              ([emoteHtml, count], index) => (
                 <div
                   className="
                     rounded text-center relative
@@ -314,10 +322,11 @@ export const ChatList = ({
                   <span dangerouslySetInnerHTML={{ __html: emoteHtml }} />
                   <p className="text-sm text-center font-bold">{count}</p>
                 </div>
-              ) : null
+              )
             )}
+          </div>
         </div>
-      </div>
+      ) : null}
       <div
         className="
           absolute bottom-0 left-0 right-0 pb-4 flex justify-center
@@ -343,6 +352,6 @@ export const ChatList = ({
           </button>
         ) : null}
       </div>
-    </>
+    </div>
   );
 };
