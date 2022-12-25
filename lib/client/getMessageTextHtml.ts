@@ -40,7 +40,7 @@ export const getMessageTextHtml = (
       if (isWebUrl(word)) {
         return `
         <a
-          class="underline"
+          class="underline break-all"
           href="${word}"
           target="_blank"
         >
